@@ -18,7 +18,7 @@ const HomePage = () => {
         <Typography variant="body1" gutterBottom>
           Discover amazing features and services tailored just for you.
         </Typography>
-        <NavLink to="/s">
+        <NavLink to="/signup">
           <Button
             variant="contained"
             color="primary"
