@@ -10,6 +10,7 @@ import {
   Box,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
+import { NavLink } from "react-router-dom";
 
 const Navbar = () => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -38,7 +39,9 @@ const Navbar = () => {
           My App
         </Typography>
         <Box>
-          <Button color="inherit">Login</Button>
+          <Button href="/signup" color="inherit">
+            <NavLink>Login</NavLink>
+          </Button>
         </Box>
         <Menu
           anchorEl={anchorEl}

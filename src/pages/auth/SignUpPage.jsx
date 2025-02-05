@@ -1,20 +1,20 @@
-import * as React from 'react';
-import {ReactElement, useState, FormEvent, useContext } from 'react';
+import * as React from "react";
+import { ReactElement, useState, FormEvent, useContext } from "react";
 
-import Avatar from '@mui/material/Avatar';
-import Button from '@mui/material/Button';
-import CssBaseline from '@mui/material/CssBaseline';
-import TextField from '@mui/material/TextField';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Checkbox from '@mui/material/Checkbox';
-import Link from '@mui/material/Link';
-import Grid from '@mui/material/Grid';
-import Box from '@mui/material/Box';
+import Avatar from "@mui/material/Avatar";
+import Button from "@mui/material/Button";
+import CssBaseline from "@mui/material/CssBaseline";
+import TextField from "@mui/material/TextField";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Checkbox from "@mui/material/Checkbox";
+import Link from "@mui/material/Link";
+import Grid from "@mui/material/Grid";
+import Box from "@mui/material/Box";
 // import { useRouter } from 'next/router';
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import Typography from '@mui/material/Typography';
-import Container from '@mui/material/Container';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import Typography from "@mui/material/Typography";
+import Container from "@mui/material/Container";
+import { createTheme, ThemeProvider } from "@mui/material/styles";
 import GoogleIcon from "@mui/icons-material/Google";
 // import SidebarLayout from '@/layouts/SidebarLayout';
 
@@ -27,7 +27,7 @@ import GoogleIcon from "@mui/icons-material/Google";
 // `
 // );
 
-const SignUpPage = () =>{
+const SignUpPage = () => {
   // const { showSnackbar } = useContext(SnackbarContext);
   // const router = useRouter();
   // const httpClient = new HttpClient();
@@ -51,7 +51,7 @@ const SignUpPage = () =>{
   //   if (formData.email.length === 0 || formData.password.length === 0 || formData.username.length === 0 ) {
   //     // Handle error message
   //     showSnackbar({ type: 'error', message: "All field is requried" })
-  //     return; 
+  //     return;
   //   };
 
   //   const response = await httpClient.post('api/register', formData);
@@ -77,18 +77,18 @@ const SignUpPage = () =>{
         <Box
           sx={{
             marginTop: 8,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center'
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
           }}
         >
-          <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
+          <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
             <LockOutlinedIcon />
           </Avatar>
           <Typography component="h1" variant="h5">
             Sign up
           </Typography>
-          <Box component="form" noValidate  sx={{ mt: 3 }}>
+          <Box component="form" noValidate sx={{ mt: 3 }}>
             <Grid container spacing={2}>
               <Grid item xs={12}>
                 <TextField
@@ -98,17 +98,6 @@ const SignUpPage = () =>{
                   label="Username"
                   name="username"
                   autoComplete="username"
-                  // onChange={handleInput}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  required
-                  fullWidth
-                  id="phone"
-                  label="Phone"
-                  name="phone"
-                  autoComplete="phone"
                   // onChange={handleInput}
                 />
               </Grid>
@@ -165,17 +154,17 @@ const SignUpPage = () =>{
               Sign Up
             </Button>
             <Button
-            fullWidth
-            variant="outlined"
-            startIcon={<GoogleIcon />}
-            // onClick={handleGoogleLogin}
-            sx={{ mt: 1 }}
-          >
-            Login with Google
-          </Button>
+              fullWidth
+              variant="outlined"
+              startIcon={<GoogleIcon />}
+              // onClick={handleGoogleLogin}
+              sx={{ mt: 1 }}
+            >
+              Login with Google
+            </Button>
             <Grid container justifyContent="flex-end">
               <Grid item>
-                <Link href="/login" variant="body2">
+                <Link href="/signin" variant="body2">
                   Already have an account? Sign in
                 </Link>
               </Grid>
@@ -185,6 +174,6 @@ const SignUpPage = () =>{
       </Container>
     </ThemeProvider>
   );
-}
+};
 // Overview.getLayout = (page) => <SidebarLayout>{page}</SidebarLayout>;
 export default SignUpPage;

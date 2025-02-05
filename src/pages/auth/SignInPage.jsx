@@ -1,15 +1,25 @@
-import { Box, Button, Grid, ThemeProvider ,CssBaseline , Avatar,Typography, Checkbox, FormControlLabel,  } from '@mui/material';
-import React, {  ReactElement  } from 'react';
+import {
+  Box,
+  Button,
+  Grid,
+  ThemeProvider,
+  CssBaseline,
+  Avatar,
+  Typography,
+  Checkbox,
+  FormControlLabel,
+} from "@mui/material";
+import React, { ReactElement } from "react";
 // import BaseLayout from 'src/layouts/BaseLayout';
-import Link from '@mui/material/Link';
-import TextField from '@mui/material/TextField';
+import Link from "@mui/material/Link";
+import TextField from "@mui/material/TextField";
 // import { HttpClient } from '@/services/http-client';
 // import { AppKey } from '@/constant/key';
 // import { useRouter } from 'next/router';
 // import { SnackbarContext } from '@/contexts/SnackbarContext';
-import Paper from '@mui/material/Paper';
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import { createTheme } from '@mui/material/styles';
+import Paper from "@mui/material/Paper";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import { createTheme } from "@mui/material/styles";
 // import { Email } from '@mui/icons-material';
 
 // const OverviewWrapper = styled(Box)(
@@ -21,7 +31,7 @@ import { createTheme } from '@mui/material/styles';
 // `
 // );
 
-const LoginPage = () => {
+const SignInPage = () => {
   // const { showSnackbar } = useContext(SnackbarContext);
   // const router = useRouter();
   // const httpClient = new HttpClient();
@@ -66,7 +76,7 @@ const LoginPage = () => {
   const defaultTheme = createTheme();
   return (
     <ThemeProvider theme={defaultTheme}>
-      <Grid container component="main" sx={{ height: '100vh' }}>
+      <Grid container component="main" sx={{ height: "100vh" }}>
         <CssBaseline />
         <Grid
           item
@@ -74,12 +84,15 @@ const LoginPage = () => {
           sm={4}
           md={7}
           sx={{
-            backgroundImage: 'url(https://i.pinimg.com/originals/20/72/a7/2072a7edce1bb689c4997f48ee1cdc57.jpg)',
-            backgroundRepeat: 'no-repeat',
+            backgroundImage:
+              "url(https://i.pinimg.com/originals/20/72/a7/2072a7edce1bb689c4997f48ee1cdc57.jpg)",
+            backgroundRepeat: "no-repeat",
             backgroundColor: (t) =>
-              t.palette.mode === 'light' ? t.palette.grey[50] : t.palette.grey[900],
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
+              t.palette.mode === "light"
+                ? t.palette.grey[50]
+                : t.palette.grey[900],
+            backgroundSize: "cover",
+            backgroundPosition: "center",
           }}
         />
         <Grid item xs={12} sm={8} md={5} component={Paper} elevation={6} square>
@@ -87,37 +100,37 @@ const LoginPage = () => {
             sx={{
               my: 8,
               mx: 4,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
             }}
           >
-            <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
+            <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
               <LockOutlinedIcon />
             </Avatar>
             <Typography component="h1" variant="h5">
               Sign in
             </Typography>
             <Box component="form" noValidate sx={{ mt: 1 }}>
-            <TextField
-                  margin="normal"
-                  fullWidth
-                  required
-                  id="outlined-required"
-                  label="Email"
-                  name="email"
-                  // onChange={handleInput}
-                />
+              <TextField
+                margin="normal"
+                fullWidth
+                required
+                id="outlined-required"
+                label="Email"
+                name="email"
+                // onChange={handleInput}
+              />
 
-               <TextField
-                  margin="normal"
-                  fullWidth
-                  required
-                  id="outlined-required"
-                  label="Password"
-                  name="password"
-                  // onChange={handleInput}
-                />
+              <TextField
+                margin="normal"
+                fullWidth
+                required
+                id="outlined-required"
+                label="Password"
+                name="password"
+                // onChange={handleInput}
+              />
 
               <FormControlLabel
                 control={<Checkbox value="remember" color="primary" />}
@@ -149,6 +162,6 @@ const LoginPage = () => {
       </Grid>
     </ThemeProvider>
   );
-}
+};
 
-export default LoginPage;
+export default SignInPage;
