@@ -20,6 +20,7 @@ import {
   Pagination,
 } from "@mui/material";
 import { Edit, Delete } from "@mui/icons-material";
+import { Helmet } from 'react-helmet';
 
 const ConfirmDialog = ({ message, onConfirm, onClose, open }) => (
   <Dialog open={open} onClose={onClose}>
@@ -35,6 +36,7 @@ const ConfirmDialog = ({ message, onConfirm, onClose, open }) => (
 );
 
 export default function UserManagementPage() {
+  const title = "User Management";
   const [users, setUsers] = useState([]);
   const [open, setOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -85,9 +87,12 @@ export default function UserManagementPage() {
 
   return (
     <Box sx={{ padding: 4 }}>
-      <Typography variant="h5" fontWeight="bold" sx={{ mb: 2 }}>
-        User Management
-      </Typography>
+      <Helmet>
+          <title>{title}</title>
+        </Helmet>
+        <Typography variant="h5" fontWeight="bold">
+          Welcome to {title}
+        </Typography>
 
       <Button variant="contained" onClick={() => setOpen(true)}>
         Add User

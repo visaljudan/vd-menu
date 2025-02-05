@@ -23,6 +23,7 @@ import {
 } from "@mui/material";
 import { Edit, Add, Close } from "@mui/icons-material";
 import DeleteTwoToneIcon from "@mui/icons-material/DeleteTwoTone";
+import { Helmet } from 'react-helmet';
 
 const ConfirmDialog = ({ message, onConfirm, onClose, open }) => (
   <Dialog open={open} onClose={onClose}>
@@ -38,6 +39,7 @@ const ConfirmDialog = ({ message, onConfirm, onClose, open }) => (
 );
 
 export default function CategoryManagementPage() {
+  const title = "Category Management";
   const [categories, setCategories] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("All");
@@ -117,7 +119,12 @@ export default function CategoryManagementPage() {
   return (
     <Box sx={{ padding: 4 }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-        <Typography variant="h5">Category Management</Typography>
+      <Helmet>
+          <title>{title}</title>
+        </Helmet>
+        <Typography variant="h5" fontWeight="bold">
+          Welcome to {title}
+        </Typography>
         <Button variant="contained" startIcon={<Add />} onClick={() => { setOpen(true); clearForm(); }}>Add Category</Button>
       </Box>
 
