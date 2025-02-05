@@ -1,9 +1,12 @@
 import React from "react";
 import { Typography, Button, Container, Box } from "@mui/material";
 import { NavLink } from "react-router-dom";
+import Navbar from "../components/Navbar"
 
 const HomePage = () => {
   return (
+    <>
+     <Navbar />
     <Container maxWidth="lg" style={{ marginTop: "2rem" }}>
       <Box
         display="flex"
@@ -18,7 +21,7 @@ const HomePage = () => {
         <Typography variant="body1" gutterBottom>
           Discover amazing features and services tailored just for you.
         </Typography>
-        <NavLink to="/signup">
+        <NavLink to="/categorymanagement">
           <Button
             variant="contained"
             color="primary"
@@ -30,6 +33,7 @@ const HomePage = () => {
         </NavLink>
       </Box>
     </Container>
+    </>
   );
 };
 
