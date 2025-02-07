@@ -117,8 +117,8 @@ const SignInPage = () => {
                 fullWidth
                 required
                 id="outlined-required"
-                label="Email"
-                name="email"
+                label="Email or Username"
+                name="email or username"
                 // onChange={handleInput}
               />
 
@@ -132,10 +132,10 @@ const SignInPage = () => {
                 // onChange={handleInput}
               />
 
-              <FormControlLabel
+              {/* <FormControlLabel
                 control={<Checkbox value="remember" color="primary" />}
                 label="Remember me"
-              />
+              /> */}
               <Button
                 type="submit"
                 fullWidth

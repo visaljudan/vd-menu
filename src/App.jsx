@@ -5,8 +5,9 @@ import SignUpPage from "./pages/auth/SignUpPage";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import BusinessManagement from "./pages/client/BusinessManagement";
 import CategoryManagement from "./pages/client/CategoryManagement";
-import UerManagement from "./pages/client/UserManagement";
+// import UerManagement from "./pages/client/UserManagement";
 import SignInPage from "./pages/auth/SignInPage";
+// import cart from "./pages/customer"
 
 const App = () => {
   return (
@@ -19,7 +20,15 @@ const App = () => {
         <Route path="/forgotPassword" element={<ForgotPassword />} />
         <Route path="/businessmanagement" element={<BusinessManagement />} />
         <Route path="/categorymanagement" element={<CategoryManagement />} />
-        <Route path="/uermanagement" element={<UerManagement />} />
+        {/* <Route path="/uermanagement" element={<UerManagement />} /> */}
+        {/* <Route path="/uermanagement" element={<UerManagement />} /> */}
+        {/* <Route path="/uermanagement" element={<UerManagement />} /> */}
+        {/* <Route path="/uermanagement" element={<UerManagement />} /> */}
+        {/* <Route path="/uermanagement" element={<UerManagement />} /> */}
+        {/* <Route path="/uermanagement" element={<UerManagement />} /> */}
+        {/* <Route path="/uermanagement" element={<UerManagement />} /> */}
+        {/* <Route path="/uermanagement" element={<UerManagement />} /> */}
+        {/* <Route path="/uermanagement" element={<UerManagement />} /> */}
       </Routes>
     </Router>
   );

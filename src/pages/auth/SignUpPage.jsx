@@ -1,75 +1,69 @@
-import * as React from "react";
-import { ReactElement, useState, FormEvent, useContext } from "react";
-
-import Avatar from "@mui/material/Avatar";
-import Button from "@mui/material/Button";
-import CssBaseline from "@mui/material/CssBaseline";
-import TextField from "@mui/material/TextField";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import Checkbox from "@mui/material/Checkbox";
-import Link from "@mui/material/Link";
-import Grid from "@mui/material/Grid";
-import Box from "@mui/material/Box";
-// import { useRouter } from 'next/router';
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import Typography from "@mui/material/Typography";
-import Container from "@mui/material/Container";
+import React, { useState } from "react";
+import {
+  Avatar,
+  Button,
+  CssBaseline,
+  TextField,
+  InputAdornment,
+  IconButton,
+  FormControlLabel,
+  Checkbox,
+  Link,
+  Grid,
+  Box,
+  Typography,
+  Container,
+} from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import GoogleIcon from "@mui/icons-material/Google";
-// import SidebarLayout from '@/layouts/SidebarLayout';
-
-// const OverviewWrapper = styled(Box)(
-//   ({ theme }) => `
-//     overflow: auto;
-//     background: ${theme.palette.common.white};
-//     flex: 1;
-//     overflow-x: hidden;
-// `
-// );
+import UploadFileIcon from "@mui/icons-material/UploadFile";
 
 const SignUpPage = () => {
-  // const { showSnackbar } = useContext(SnackbarContext);
-  // const router = useRouter();
-  // const httpClient = new HttpClient();
-  // const [formData, setFormData] = useState({
-  //   username: '',
-  //   email: '',
-  //   password: ''
-  // });
+  const [formData, setFormData] = useState({
+    fullname: "",
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    profileImage: null,
+  });
 
-  // const handleInput = (event) => {
-  //   const { name, value } = event.target;
-  //   setFormData({
-  //     ...formData,
-  //     [name]: value
-  //   });
-  // };
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [previewImage, setPreviewImage] = useState("");
 
-  // const submitForm = async (e: FormEvent) => {
-  //   // We don't want the page to refresh
-  //   e.preventDefault();
-  //   if (formData.email.length === 0 || formData.password.length === 0 || formData.username.length === 0 ) {
-  //     // Handle error message
-  //     showSnackbar({ type: 'error', message: "All field is requried" })
-  //     return;
-  //   };
+  const handleInput = (event) => {
+    const { name, value } = event.target;
+    setFormData({ ...formData, [name]: value });
+  };
 
-  //   const response = await httpClient.post('api/register', formData);
-  //   console.log(formData);
-  //   if (typeof response === "string") {
-  //     // Handle error message
-  //     showSnackbar({ type: 'error', message: response });
-  //   } else {
-  //     // Assuming successful signup message
-  //     showSnackbar({
-  //       type: 'success',
-  //       message: 'Successfully signed up! Please login with your email or username.'
-  //     });
-  //     await router.push('/');
-  //   }
-  // };
+  const handlePasswordToggle = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const handleConfirmPasswordToggle = () => {
+    setShowConfirmPassword(!showConfirmPassword);
+  };
+
+  const handleImageUpload = (event) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setFormData({ ...formData, profileImage: file });
+
+      // Preview image
+      const reader = new FileReader();
+      reader.onload = () => {
+        setPreviewImage(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const defaultTheme = createTheme();
+
   return (
     <ThemeProvider theme={defaultTheme}>
       <Container component="main" maxWidth="xs">
@@ -82,9 +76,24 @@ const SignUpPage = () => {
             alignItems: "center",
           }}
         >
-          <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
-            <LockOutlinedIcon />
-          </Avatar>
+          {/* Profile Image Upload */}
+          <label htmlFor="upload-photo">
+            <input
+              accept="image/*"
+              style={{ display: "none" }}
+              id="upload-photo"
+              name="profileImage"
+              type="file"
+              onChange={handleImageUpload}
+            />
+            <Avatar
+              sx={{ width: 80, height: 80, cursor: "pointer", mb: 2 }}
+              src={previewImage}
+            >
+              <UploadFileIcon />
+            </Avatar>
+          </label>
+
           <Typography component="h1" variant="h5">
             Sign up
           </Typography>
@@ -94,11 +103,22 @@ const SignUpPage = () => {
                 <TextField
                   required
                   fullWidth
+                  id="fullname"
+                  label="Fullname"
+                  name="fullname"
+                  autoComplete="fullname"
+                  onChange={handleInput}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  required
+                  fullWidth
                   id="username"
                   label="Username"
                   name="username"
                   autoComplete="username"
-                  // onChange={handleInput}
+                  onChange={handleInput}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -109,55 +129,67 @@ const SignUpPage = () => {
                   label="Email Address"
                   name="email"
                   autoComplete="email"
-                  // onChange={handleInput}
+                  onChange={handleInput}
                 />
               </Grid>
+              {/* Password Field */}
               <Grid item xs={12}>
                 <TextField
                   required
                   fullWidth
                   name="password"
                   label="Password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   id="password"
                   autoComplete="new-password"
-                  // onChange={handleInput}
+                  onChange={handleInput}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton onClick={handlePasswordToggle} edge="end">
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
                 />
               </Grid>
+              {/* Confirm Password Field */}
               <Grid item xs={12}>
                 <TextField
                   required
                   fullWidth
-                  name="confirm password"
+                  name="confirmPassword"
                   label="Confirm Password"
-                  type="confirm password"
-                  id="confirm password"
-                  autoComplete="confirm password"
-                  // onChange={handleInput}
+                  type={showConfirmPassword ? "text" : "password"}
+                  id="confirmPassword"
+                  autoComplete="new-password"
+                  onChange={handleInput}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton onClick={handleConfirmPasswordToggle} edge="end">
+                          {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
                 />
               </Grid>
               <Grid item xs={12}>
                 <FormControlLabel
-                  control={
-                    <Checkbox value="allowExtraEmails" color="primary" />
-                  }
-                  label="I want to receive inspiration, marketing promotions and updates via email."
+                  control={<Checkbox value="allowExtraEmails" color="primary" />}
+                  label="I want to receive inspiration, marketing promotions, and updates via email."
                 />
               </Grid>
             </Grid>
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ mt: 3, mb: 2 }}
-            >
+            <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }}>
               Sign Up
             </Button>
             <Button
               fullWidth
               variant="outlined"
               startIcon={<GoogleIcon />}
-              // onClick={handleGoogleLogin}
               sx={{ mt: 1 }}
             >
               Login with Google
@@ -175,5 +207,5 @@ const SignUpPage = () => {
     </ThemeProvider>
   );
 };
-// Overview.getLayout = (page) => <SidebarLayout>{page}</SidebarLayout>;
+
 export default SignUpPage;
