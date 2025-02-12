@@ -39,9 +39,9 @@ const Navbar = () => {
           My App
         </Typography>
         <Box>
-          <Button href="/signup" color="inherit">
-            <NavLink>Login</NavLink>
-          </Button>
+          <Link href="/signup" color="inherit">
+            Login
+          </Link>
         </Box>
         <Menu
           anchorEl={anchorEl}

@@ -1,165 +1,237 @@
+import React, { useState } from "react";
 import {
-  Box,
   Button,
-  Grid,
-  ThemeProvider,
   CssBaseline,
-  Avatar,
+  TextField,
+  InputAdornment,
+  IconButton,
   Typography,
-  Checkbox,
-  FormControlLabel,
+  Container,
+  Grid,
+  Box,
+  Link,
+  Avatar,
 } from "@mui/material";
-import React, { ReactElement } from "react";
-// import BaseLayout from 'src/layouts/BaseLayout';
-import Link from "@mui/material/Link";
-import TextField from "@mui/material/TextField";
-// import { HttpClient } from '@/services/http-client';
-// import { AppKey } from '@/constant/key';
-// import { useRouter } from 'next/router';
-// import { SnackbarContext } from '@/contexts/SnackbarContext';
-import Paper from "@mui/material/Paper";
+import { createTheme, ThemeProvider } from "@mui/material/styles";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import { createTheme } from "@mui/material/styles";
-// import { Email } from '@mui/icons-material';
-
-// const OverviewWrapper = styled(Box)(
-//   ({ theme }) => `
-//     overflow: auto;
-//     background: ${theme.palette.common.white};
-//     flex: 1;
-//     overflow-x: hidden;
-// `
-// );
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import GoogleIcon from "@mui/icons-material/Google";
+import {
+  signInFailure,
+  signInStart,
+  signInSuccess,
+} from "../../app/user/userSlice";
+import api from "../../api/axiosConfig";
+import { toast } from "react-toastify";
+import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
 
 const SignInPage = () => {
-  // const { showSnackbar } = useContext(SnackbarContext);
-  // const router = useRouter();
-  // const httpClient = new HttpClient();
-  // const [formData, setFormData] = useState({
-  //   email: '',
-  //   password: ''
-  // });
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // const handleInput = (e: any) => {
-  //   const fieldName = e.target.name;
-  //   const fieldValue = e.target.value;
+  const [formData, setFormData] = useState({
+    usernameOrEmail: "",
+    password: "",
+  });
 
-  //   setFormData((prevState) => ({
-  //     ...prevState,
-  //     [fieldName]: fieldValue
-  //   }));
-  // };
+  const [errors, setErrors] = useState({
+    usernameOrEmail: "",
+    password: "",
+  });
 
-  // const submitForm = async (e: FormEvent) => {
-  //   // We don't want the page to refresh
-  //   e.preventDefault();
+  const handleInput = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      [name]: value,
+    }));
+  };
 
-  //   const response = await httpClient.post('api/login', formData);
-
-  //   if (typeof response === 'string') {
-  //     showSnackbar({ type: 'error', message: response });
-  //     return;
-  //   }
-  //   // localStorage.setItem(AppKey.accessToken, response.accessToken);
-  //   // localStorage.setItem(AppKey.refreshToken, response.refreshToken);
-  //   // localStorage.setItem(AppKey.role, response.role);
-  //   // localStorage.setItem(AppKey.email, response.username);
-  //   showSnackbar({ type: 'success', message: 'Successfully logged in!' });
-  //   const role = response.data.user.role;
-  //   await router.push(`/dashboards/dashboard/user`);
-  //   console.log(role);
-  // };
-
-  // useEffect(() => {
-  // }, []);
+  const handlePasswordToggle = () => {
+    setShowPassword(!showPassword);
+  };
 
   const defaultTheme = createTheme();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      dispatch(signInStart());
+      const response = await api.post("/v1/auth/signin", formData);
+      const data = response.data;
+      dispatch(signInSuccess(data));
+      navigate("/");
+    } catch (error) {
+      const errorMessage =
+        error?.response?.data?.message || "An unexpected error occurred.";
+      toast.error(errorMessage);
+      dispatch(signInFailure(errorMessage));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <ThemeProvider theme={defaultTheme}>
-      <Grid container component="main" sx={{ height: "100vh" }}>
+      <Container component="main" maxWidth="md">
         <CssBaseline />
-        <Grid
-          item
-          xs={false}
-          sm={4}
-          md={7}
+        <Box
           sx={{
-            backgroundImage:
-              "url(https://i.pinimg.com/originals/20/72/a7/2072a7edce1bb689c4997f48ee1cdc57.jpg)",
-            backgroundRepeat: "no-repeat",
-            backgroundColor: (t) =>
-              t.palette.mode === "light"
-                ? t.palette.grey[50]
-                : t.palette.grey[900],
-            backgroundSize: "cover",
-            backgroundPosition: "center",
+            marginTop: 8,
+            marginBottom: 8,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
           }}
-        />
-        <Grid item xs={12} sm={8} md={5} component={Paper} elevation={6} square>
-          <Box
-            sx={{
-              my: 8,
-              mx: 4,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
-            <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
-              <LockOutlinedIcon />
-            </Avatar>
-            <Typography component="h1" variant="h5">
-              Sign in
-            </Typography>
-            <Box component="form" noValidate sx={{ mt: 1 }}>
-              <TextField
-                margin="normal"
-                fullWidth
-                required
-                id="outlined-required"
-                label="Email or Username"
-                name="email or username"
-                // onChange={handleInput}
-              />
-
-              <TextField
-                margin="normal"
-                fullWidth
-                required
-                id="outlined-required"
-                label="Password"
-                name="password"
-                // onChange={handleInput}
-              />
-
-              {/* <FormControlLabel
-                control={<Checkbox value="remember" color="primary" />}
-                label="Remember me"
-              /> */}
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                sx={{ mt: 3, mb: 2 }}
+        >
+          <Grid container spacing={2}>
+            {/* Left Side: Image */}
+            <Grid
+              item
+              xs={12}
+              md={6}
+              sx={{
+                display: {
+                  xs: "none", // Hide on extra small and small screens
+                  md: "block", // Show on medium screens and up
+                },
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  height: "100%",
+                  p: 2,
+                }}
               >
-                Sign In
-              </Button>
-              <Grid container>
-                <Grid item xs>
-                  <Link href="/forgotpassword" variant="body2">
-                    Forgot password?
-                  </Link>
-                </Grid>
-                <Grid item>
-                  <Link href="/signup" variant="body2">
-                    {"Don't have an account? Sign Up"}
-                  </Link>
-                </Grid>
-              </Grid>
-            </Box>
-          </Box>
-        </Grid>
-      </Grid>
+                <img
+                  src="https://img.freepik.com/free-vector/computer-login-concept-illustration_114360-7962.jpg?semt=ais_hybrid"
+                  alt="Sign In Illustration"
+                  style={{ maxWidth: "100%", borderRadius: "8px" }}
+                />
+              </Box>
+            </Grid>
+
+            {/* Right Side: Form */}
+            <Grid item xs={12} md={6}>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                }}
+              >
+                <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
+                  <LockOutlinedIcon />
+                </Avatar>
+                <Typography component="h1" variant="contain">
+                  Sign In
+                </Typography>
+
+                <Box
+                  component="form"
+                  noValidate
+                  sx={{ mt: 3 }}
+                  onSubmit={handleSubmit}
+                >
+                  <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <TextField
+                        required
+                        fullWidth
+                        id="usernameOrEmail"
+                        label="Username or Email"
+                        name="usernameOrEmail"
+                        autoComplete="usernameOrEmail"
+                        value={formData.usernameOrEmail}
+                        onChange={handleInput}
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        required
+                        fullWidth
+                        name="password"
+                        label="Password"
+                        type={showPassword ? "text" : "password"}
+                        id="password"
+                        autoComplete="new-password"
+                        value={formData.password}
+                        onChange={handleInput}
+                        InputProps={{
+                          endAdornment: (
+                            <InputAdornment position="end">
+                              <IconButton
+                                onClick={handlePasswordToggle}
+                                edge="end"
+                              >
+                                {showPassword ? (
+                                  <VisibilityOff />
+                                ) : (
+                                  <Visibility />
+                                )}
+                              </IconButton>
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                    </Grid>
+                  </Grid>
+                  <Grid item>
+                    <Link
+                      href="/forgot-password"
+                      variant="body2"
+                      sx={{ ml: 1 }}
+                    >
+                      Forgot Password
+                    </Link>
+                  </Grid>
+                  <Button
+                    type="submit"
+                    fullWidth
+                    variant="contained"
+                    sx={{ mt: 3, mb: 2 }}
+                    disabled={
+                      !formData.usernameOrEmail ||
+                      !formData.password ||
+                      errors.usernameOrEmail ||
+                      errors.password
+                    }
+                  >
+                    {loading ? "Signing In ..." : "Sign In"}
+                  </Button>
+
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    startIcon={<GoogleIcon />}
+                    sx={{ mt: 1 }}
+                  >
+                    Login with Google
+                  </Button>
+                  <Grid container justifyContent="flex-end" marginTop={"16px"}>
+                    <Grid item>
+                      <Typography variant="body2" component="span">
+                        Don't have account?
+                      </Typography>
+                      <Link href="/signup" variant="body2" sx={{ ml: 1 }}>
+                        Sign Up
+                      </Link>
+                    </Grid>
+                  </Grid>
+                </Box>
+              </Box>
+            </Grid>
+          </Grid>
+        </Box>
+      </Container>
     </ThemeProvider>
   );
 };
