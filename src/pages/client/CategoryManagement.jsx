@@ -1,9 +1,8 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Button,
   TextField,
-  MenuItem,
   Table,
   TableBody,
   TableCell,
@@ -12,18 +11,21 @@ import {
   TableRow,
   Paper,
   IconButton,
-  Chip,
   Typography,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   Tooltip,
-  Pagination
+  Pagination,
+  Select,
+  MenuItem,
+  TablePagination,
 } from "@mui/material";
-import { Edit, Add, Close } from "@mui/icons-material";
-import DeleteTwoToneIcon from "@mui/icons-material/DeleteTwoTone";
-import { Helmet } from 'react-helmet';
+import { Edit, Delete } from "@mui/icons-material";
+import { Helmet } from "react-helmet";
+import api from "../../api/axiosConfig";
+import { Link } from "react-router-dom";
 
 const ConfirmDialog = ({ message, onConfirm, onClose, open }) => (
   <Dialog open={open} onClose={onClose}>
@@ -38,146 +40,210 @@ const ConfirmDialog = ({ message, onConfirm, onClose, open }) => (
   </Dialog>
 );
 
-export default function CategoryManagementPage() {
-  const title = "Category Management";
-  const [categories, setCategories] = useState([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterType, setFilterType] = useState("All");
-  const [filterStatus, setFilterStatus] = useState("All");
-  const [open, setOpen] = useState(false);
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [deleteId, setDeleteId] = useState(null);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [editingCategory, setEditingCategory] = useState(null);
-  const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
-  const [description, setDescription] = useState("");
-  const [status, setStatus] = useState("Active");
-  const [page, setPage] = useState(1);
-  const itemsPerPage = 10;
+const EditCategoryModal = ({ open, category, onClose, onSave }) => {
+  const [name, setName] = useState(category?.name || "");
+  const [description, setDescription] = useState(category?.description || "");
 
   useEffect(() => {
-    fetch("https://list.free.mockoapp.net/Category")
-      .then((res) => res.json())
-      .then(setCategories);
-  }, []);
+    setName(category?.name || "");
+    setDescription(category?.description || "");
+  }, [category]);
 
-  const handleSubmit = () => {
-    const newCategory = {
-      id: isEditMode ? editingCategory.id : categories.length + 1,
-      name,
-      slug: name.toLowerCase().replace(/\s+/g, "-"),
-      description,
-      status,
-      type: "Service",
-    };
-    setCategories((prev) =>
-      isEditMode
-        ? prev.map((cat) => (cat.id === editingCategory.id ? newCategory : cat))
-        : [...prev, newCategory]
-    );
-    setOpen(false);
-    clearForm();
+  const handleSave = () => {
+    onSave({ ...category, name, description });
   };
 
-  const clearForm = () => {
-    setName("");
-    setSlug("");
-    setDescription("");
-    setStatus("Active");
-    setIsEditMode(false);
-    setEditingCategory(null);
-  };
-
-  const handleEdit = (category) => {
-    setIsEditMode(true);
-    setEditingCategory(category);
-    setName(category.name);
-    setSlug(category.slug);
-    setDescription(category.description);
-    setStatus(category.status);
-    setOpen(true);
-  };
-
-  const handleDelete = (id) => {
-    setCategories((prev) => prev.filter((category) => category.id !== id));
-    setConfirmOpen(false);
-  };
-
-  const filteredCategories = categories.filter(
-    (category) =>
-      (filterType === "All" || category.type === filterType) &&
-      (filterStatus === "All" || category.status === filterStatus) &&
-      category.name.toLowerCase().includes(searchQuery.toLowerCase())
+  return (
+    <Dialog open={open} onClose={onClose}>
+      <DialogTitle>Edit Category</DialogTitle>
+      <DialogContent>
+        <TextField
+          fullWidth
+          label="Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          margin="dense"
+        />
+        <TextField
+          fullWidth
+          label="Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          margin="dense"
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={handleSave} variant="contained" color="primary">
+          Save
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
+};
 
-  const paginatedCategories = filteredCategories.slice(
-    (page - 1) * itemsPerPage,
-    page * itemsPerPage
+const AddCategoryModal = ({ open, onClose, onSave }) => {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+
+  const handleSave = () => {
+    onSave({ name, description });
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose}>
+      <DialogTitle>Add Category</DialogTitle>
+      <DialogContent>
+        <TextField
+          fullWidth
+          label="Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          margin="dense"
+        />
+        <TextField
+          fullWidth
+          label="Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          margin="dense"
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={handleSave} variant="contained" color="primary">
+          Save
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
+};
+
+const CategoryManagement = () => {
+  const title = "Category Management";
+  const [categories, setCategories] = useState([]);
+  const [totalItems, setTotalItems] = useState(0);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [addModalOpen, setAddModalOpen] = useState(false);
+
+  const handlePageChange = (_event, newPage) => {
+    setPageNumber(newPage);
+  };
+
+  const handleLimitChange = (event) => {
+    setPageSize(parseInt(event.target.value, 10));
+  };
+
+  const getCategories = async () => {
+    try {
+      const res = await api.get(
+        `/v1/categories?page=${pageNumber}&limit=${pageSize}`
+      );
+      setCategories(res.data.data);
+      setTotalItems(res.data.data.total);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    }
+  };
+
+  const onConfirm = async (id) => {
+    await api.delete(`/v1/categorise/${id}`);
+    getCategories();
+  };
+
+  const handleEditSave = async (category) => {
+    try {
+      await api.patch(`/v1/categories/${category._id}`, category);
+      getCategories();
+    } catch (error) {
+      console.error("Error updating category:", error);
+    }
+    setEditModalOpen(false);
+  };
+
+  const handleAddSave = async (category) => {
+    try {
+      await api.post("/v1/categories", category);
+      getCategories();
+    } catch (error) {
+      console.error("Error adding category:", error);
+    }
+    setAddModalOpen(false);
+  };
+
+  useEffect(() => {
+    getCategories();
+  }, [pageNumber, pageSize]);
 
   return (
     <Box sx={{ padding: 4 }}>
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
       <Helmet>
-          <title>{title}</title>
-        </Helmet>
-        <Typography variant="h5" fontWeight="bold">
-          Welcome to {title}
-        </Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={() => { setOpen(true); clearForm(); }}>Add Category</Button>
-      </Box>
+        <title>{title}</title>
+      </Helmet>
+      <Typography variant="h5" fontWeight="bold">
+        Welcome to {title}
+      </Typography>
 
-      <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
-        <TextField
-          placeholder="Search..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          fullWidth
-        />
-        <TextField select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
-          <MenuItem value="All">All Types</MenuItem>
-          <MenuItem value="Service">Service</MenuItem>
-          <MenuItem value="Freelancer">Freelancer</MenuItem>
-        </TextField>
-        <TextField select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-          <MenuItem value="All">All Statuses</MenuItem>
-          <MenuItem value="Active">Active</MenuItem>
-          <MenuItem value="Inactive">Inactive</MenuItem>
-        </TextField>
-      </Box>
+      <Button variant="contained" onClick={() => setAddModalOpen(true)} sx={{ mt: 2 }}>
+        Add Category
+      </Button>
 
-      <TableContainer component={Paper}>
+      {/* <Box sx={{ display: "flex", alignItems: "center", gap: 2, mt: 2 }}>
+        <Typography>Rows per page:</Typography>
+        <Select value={pageSize} onChange={handleLimitChange} size="small">
+          {[5, 10, 20, 50].map((size) => (
+            <MenuItem key={size} value={size}>
+              {size}
+            </MenuItem>
+          ))}
+        </Select>
+      </Box> */}
+      <TableContainer component={Paper} sx={{ mt: 2 }}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>ID</TableCell>
+              <TableCell>NO</TableCell>
               <TableCell>Name</TableCell>
-              <TableCell>Slug</TableCell>
-              <TableCell>Type</TableCell>
               <TableCell>Description</TableCell>
+              <TableCell>Slug</TableCell>
               <TableCell>Status</TableCell>
-              <TableCell>Actions</TableCell>
+              <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {paginatedCategories.map((category) => (
-              <TableRow key={category.id}>
-                <TableCell>{category.id}</TableCell>
+            {categories?.data?.map((category, index) => (
+              <TableRow key={category._id}>
+                <TableCell>{index + 1}</TableCell>
                 <TableCell>{category.name}</TableCell>
-                <TableCell>{category.slug}</TableCell>
-                <TableCell>{category.type}</TableCell>
                 <TableCell>{category.description}</TableCell>
-                <TableCell>
-                  <Chip label={category.status} color={category.status === "Active" ? "success" : "default"} size="small" />
-                </TableCell>
-                <TableCell>
+                <TableCell>{category.slug}</TableCell>
+                <TableCell>{category.status}</TableCell>
+                <TableCell align="right">
                   <Tooltip title="Edit">
-                    <IconButton onClick={() => handleEdit(category)}><Edit /></IconButton>
+                    <IconButton
+                      onClick={() => {
+                        setEditingCategory(category);
+                        setEditModalOpen(true);
+                      }}
+                      color="primary"
+                    >
+                      <Edit />
+                    </IconButton>
                   </Tooltip>
                   <Tooltip title="Delete">
-                    <IconButton onClick={() => { setConfirmOpen(true); setDeleteId(category.id); }} color="error">
-                      <DeleteTwoToneIcon />
+                    <IconButton
+                      onClick={() => {
+                        setConfirmOpen(true);
+                        setDeleteId(category._id);
+                      }}
+                      color="error"
+                    >
+                      <Delete />
                     </IconButton>
                   </Tooltip>
                 </TableCell>
@@ -186,37 +252,36 @@ export default function CategoryManagementPage() {
           </TableBody>
         </Table>
       </TableContainer>
-
-      <Pagination
-        count={Math.ceil(filteredCategories.length / itemsPerPage)}
-        page={page}
-        onChange={(e, value) => setPage(value)}
-        sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}
+      <Box p={2}>
+                <TablePagination
+                  component="div"
+                  count={totalItems}
+                  onPageChange={handlePageChange}
+                  onRowsPerPageChange={handleLimitChange}
+                  page={pageNumber}
+                  rowsPerPage={pageSize}
+                  rowsPerPageOptions={Pagination.pageSizeOptions}
+                />
+              </Box>
+      <EditCategoryModal
+        open={editModalOpen}
+        category={editingCategory}
+        onClose={() => setEditModalOpen(false)}
+        onSave={handleEditSave}
       />
-
-      <Dialog open={open} onClose={() => setOpen(false)}>
-        <DialogTitle>{isEditMode ? "Edit Category" : "Add Category"}</DialogTitle>
-        <DialogContent>
-          <TextField label="Name" fullWidth value={name} onChange={(e) => setName(e.target.value)} sx={{ mb: 2 }} />
-          <TextField label="Slug" fullWidth value={slug} disabled sx={{ mb: 2 }} />
-          <TextField label="Description" fullWidth multiline rows={3} value={description} onChange={(e) => setDescription(e.target.value)} sx={{ mb: 2 }} />
-          <TextField select label="Status" fullWidth value={status} onChange={(e) => setStatus(e.target.value)}>
-            <MenuItem value="Active">Active</MenuItem>
-            <MenuItem value="Inactive">Inactive</MenuItem>
-          </TextField>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleSubmit}>{isEditMode ? "Update" : "Save"}</Button>
-        </DialogActions>
-      </Dialog>
-
+      <AddCategoryModal
+        open={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSave={handleAddSave}
+      />
       <ConfirmDialog
         open={confirmOpen}
         message="Are you sure you want to delete this category?"
-        onConfirm={() => handleDelete(deleteId)}
+        onConfirm={() => onConfirm(deleteId)}
         onClose={() => setConfirmOpen(false)}
       />
     </Box>
   );
-}
+};
+
+export default CategoryManagement;

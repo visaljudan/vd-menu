@@ -18,9 +18,14 @@ import {
   DialogActions,
   Tooltip,
   Pagination,
+  Select,
+  MenuItem,
+  TablePagination,
 } from "@mui/material";
 import { Edit, Delete } from "@mui/icons-material";
 import { Helmet } from "react-helmet";
+import api from "../../api/axiosConfig"; 
+import { Link } from "react-router-dom";
 
 const ConfirmDialog = ({ message, onConfirm, onClose, open }) => (
   <Dialog open={open} onClose={onClose}>
@@ -38,52 +43,46 @@ const ConfirmDialog = ({ message, onConfirm, onClose, open }) => (
 const AdminUserManagement = () => {
   const title = "User Management";
   const [users, setUsers] = useState([]);
-  const [open, setOpen] = useState(false);
+  const [totalItems, setTotalItems] = useState(0);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
-  const [editingUser, setEditingUser] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
 
-  const [formData, setFormData] = useState({
-    name: "",
-    username: "",
-    email: "",
-    role: "",
-  });
 
-  useEffect(() => {
-    fetch("https://list.free.mockoapp.net/user")
-      .then((res) => res.json())
-      .then((data) => setUsers(data));
-  }, []);
-
-  const handleEdit = (user) => {
-    setEditingUser(user);
-    setFormData(user);
-    setOpen(true);
+  const handlePageChange = (_event, newPage) => {
+    setPageNumber(newPage);
   };
 
-  const handleDelete = (id) => {
-    setUsers(users.filter((user) => user.id !== id));
+  const handleLimitChange = (event) => {
+    setPageSize(parseInt(event.target.value, 10));
+  };
+
+  const getUsers = async () => {
+    try {
+      const res = await api.get(
+        `/v1/users?page=${pageNumber}&limit=${pageSize}`
+      );
+      setUsers(res.data.data);
+      setTotalItems(res.data.data.total);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await api.delete(`/v1/users/${id}`);
+      getUsers();
+    } catch (error) {
+      console.error("Error deleting user:", error);
+    }
     setConfirmOpen(false);
   };
 
-  const handleSubmit = () => {
-    if (editingUser) {
-      setUsers(users.map((u) => (u.id === editingUser.id ? formData : u)));
-    } else {
-      setUsers([...users, { ...formData, id: Date.now() }]);
-    }
-    setOpen(false);
-    setFormData({ name: "", username: "", email: "", role: "" });
-    setEditingUser(null);
-  };
-
-  const paginatedUsers = users.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  useEffect(() => {
+    getUsers();
+  }, [pageNumber, pageSize]);
 
   return (
     <Box sx={{ padding: 4 }}>
@@ -93,34 +92,37 @@ const AdminUserManagement = () => {
       <Typography variant="h5" fontWeight="bold">
         Welcome to {title}
       </Typography>
-
-      <Button variant="contained" onClick={() => setOpen(true)}>
-        Add User
-      </Button>
-
       <TableContainer component={Paper} sx={{ mt: 2 }}>
-        <Table>
+        <Table stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell>ID</TableCell>
-              <TableCell>Name</TableCell>
+              <TableCell width={12} align="right">
+                NO</TableCell>
+              <TableCell>Full Name</TableCell>
               <TableCell>Username</TableCell>
-              <TableCell>Email</TableCell>
               <TableCell>Role</TableCell>
-              <TableCell>Actions</TableCell>
+              <TableCell>Created At</TableCell>
+              <TableCell>Updated At</TableCell>
+              <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {paginatedUsers.map((user) => (
+            {users?.data?.map((user, index) => (
               <TableRow key={user.id}>
-                <TableCell>{user.id}</TableCell>
+                <TableCell>{index + 1}</TableCell>
                 <TableCell>{user.name}</TableCell>
                 <TableCell>{user.username}</TableCell>
-                <TableCell>{user.email}</TableCell>
                 <TableCell>{user.role}</TableCell>
+                <TableCell>{user.createdAt}</TableCell>
+                <TableCell>{user.updatedAt}</TableCell>
                 <TableCell>
                   <Tooltip title="Edit">
-                    <IconButton onClick={() => handleEdit(user)}>
+                    <IconButton 
+                      component={Link}
+                      to={`/admin/users/${user._id}`}
+                      color="primary"
+                      size="small"
+                    >
                       <Edit />
                     </IconButton>
                   </Tooltip>
@@ -128,7 +130,7 @@ const AdminUserManagement = () => {
                     <IconButton
                       onClick={() => {
                         setConfirmOpen(true);
-                        setDeleteId(user.id);
+                        setDeleteId(user._id);
                       }}
                       color="error"
                     >
@@ -141,37 +143,17 @@ const AdminUserManagement = () => {
           </TableBody>
         </Table>
       </TableContainer>
-
-      <Pagination
-        count={Math.ceil(users.length / itemsPerPage)}
-        page={currentPage}
-        onChange={(e, page) => setCurrentPage(page)}
-        sx={{ mt: 2, display: "flex", justifyContent: "center" }}
-      />
-
-      <Dialog open={open} onClose={() => setOpen(false)}>
-        <DialogTitle>{editingUser ? "Edit User" : "Add User"}</DialogTitle>
-        <DialogContent>
-          {Object.keys(formData).map((key) => (
-            <TextField
-              key={key}
-              label={key.charAt(0).toUpperCase() + key.slice(1)}
-              fullWidth
-              value={formData[key]}
-              onChange={(e) =>
-                setFormData({ ...formData, [key]: e.target.value })
-              }
-              sx={{ mb: 2 }}
-            />
-          ))}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleSubmit}>
-            {editingUser ? "Update" : "Save"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <Box p={2}>
+                <TablePagination
+                  component="div"
+                  count={totalItems}
+                  onPageChange={handlePageChange}
+                  onRowsPerPageChange={handleLimitChange}
+                  page={pageNumber}
+                  rowsPerPage={pageSize}
+                  rowsPerPageOptions={Pagination.pageSizeOptions}
+                />
+              </Box>
 
       <ConfirmDialog
         open={confirmOpen}
@@ -182,4 +164,5 @@ const AdminUserManagement = () => {
     </Box>
   );
 };
+
 export default AdminUserManagement;
