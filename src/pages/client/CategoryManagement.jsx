@@ -25,7 +25,6 @@ import {
 import { Edit, Delete } from "@mui/icons-material";
 import { Helmet } from "react-helmet";
 import api from "../../api/axiosConfig";
-import { Link } from "react-router-dom";
 
 const ConfirmDialog = ({ message, onConfirm, onClose, open }) => (
   <Dialog open={open} onClose={onClose}>
@@ -131,21 +130,14 @@ const CategoryManagement = () => {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
 
-  const handlePageChange = (_event, newPage) => {
-    setPageNumber(newPage);
-  };
-
-  const handleLimitChange = (event) => {
-    setPageSize(parseInt(event.target.value, 10));
-  };
-
   const getCategories = async () => {
     try {
       const res = await api.get(
         `/v1/categories?page=${pageNumber}&limit=${pageSize}`
       );
-      setCategories(res.data.data);
-      setTotalItems(res.data.data.total);
+      const data = res.data.data;
+      setCategories(data);
+      setTotalItems(data.total);
     } catch (error) {
       console.error("Error fetching categories:", error);
     }
@@ -179,7 +171,7 @@ const CategoryManagement = () => {
   useEffect(() => {
     getCategories();
   }, [pageNumber, pageSize]);
-
+  console.log();
   return (
     <Box sx={{ padding: 4 }}>
       <Helmet>
@@ -189,7 +181,11 @@ const CategoryManagement = () => {
         Welcome to {title}
       </Typography>
 
-      <Button variant="contained" onClick={() => setAddModalOpen(true)} sx={{ mt: 2 }}>
+      <Button
+        variant="contained"
+        onClick={() => setAddModalOpen(true)}
+        sx={{ mt: 2 }}
+      >
         Add Category
       </Button>
 
@@ -253,16 +249,19 @@ const CategoryManagement = () => {
         </Table>
       </TableContainer>
       <Box p={2}>
-                <TablePagination
-                  component="div"
-                  count={totalItems}
-                  onPageChange={handlePageChange}
-                  onRowsPerPageChange={handleLimitChange}
-                  page={pageNumber}
-                  rowsPerPage={pageSize}
-                  rowsPerPageOptions={Pagination.pageSizeOptions}
-                />
-              </Box>
+        <TablePagination
+          component="div"
+          count={totalItems}
+          page={pageNumber - 1}
+          onPageChange={(_, newPage) => setPageNumber(newPage + 1)}
+          rowsPerPage={pageSize}
+          onRowsPerPageChange={(event) => {
+            setPageSize(parseInt(event.target.value, 10));
+            setPageNumber(1);
+          }}
+          rowsPerPageOptions={[5, 10, 20, 50]}
+        />
+      </Box>
       <EditCategoryModal
         open={editModalOpen}
         category={editingCategory}

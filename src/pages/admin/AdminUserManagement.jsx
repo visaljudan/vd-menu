@@ -25,6 +25,7 @@ import {
 import { Edit, Delete } from "@mui/icons-material";
 import { Helmet } from "react-helmet";
 import api from "../../api/axiosConfig"; // Ensure this path is correct
+import AdminDashboard from "../../components/AdminDashboard";
 
 const ConfirmDialog = ({ message, onConfirm, onClose, open }) => (
   <Dialog open={open} onClose={onClose}>
@@ -87,88 +88,90 @@ const AdminUserManagement = () => {
 
   console.log(pageSize);
   return (
-    <Box sx={{ padding: 4 }}>
-      <Helmet>
-        <title>{title}</title>
-      </Helmet>
-      <Typography variant="h5" fontWeight="bold" sx={{ mb: 2 }}>
-        Welcome to {title}
-      </Typography>
+    <AdminDashboard>
+      <Box sx={{ padding: 4 }}>
+        <Helmet>
+          <title>{title}</title>
+        </Helmet>
+        <Typography variant="h5" fontWeight="bold" sx={{ mb: 2 }}>
+          Welcome to {title}
+        </Typography>
 
-      <Button variant="contained" onClick={() => setEditingUser({})}>
-        Add User
-      </Button>
+        <Button variant="contained" onClick={() => setEditingUser({})}>
+          Add User
+        </Button>
 
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2, mt: 2 }}>
-        <Typography>Rows per page:</Typography>
-        <Select value={pageSize} onChange={handleLimitChange} size="small">
-          {[5, 10, 20, 50].map((size) => (
-            <MenuItem key={size} value={size}>
-              {size}
-            </MenuItem>
-          ))}
-        </Select>
-      </Box>
-      <TableContainer component={Paper} sx={{ mt: 2 }}>
-        <Table stickyHeader>
-          <TableHead>
-            <TableRow>
-              <TableCell>ID</TableCell>
-              <TableCell>Full Name</TableCell>
-              <TableCell>Username</TableCell>
-              <TableCell>Role</TableCell>
-              <TableCell>Created At</TableCell>
-              <TableCell>Updated At</TableCell>
-              <TableCell>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {users?.data?.map((user) => (
-              <TableRow key={user._id}>
-                <TableCell>{user.id}</TableCell>
-                <TableCell>{user.name}</TableCell>
-                <TableCell>{user.username}</TableCell>
-                <TableCell>{user.role}</TableCell>
-                <TableCell>{user.createdAt}</TableCell>
-                <TableCell>{user.updatedAt}</TableCell>
-                <TableCell>
-                  <Tooltip title="Edit">
-                    <IconButton onClick={() => setEditingUser(user)}>
-                      <Edit />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Delete">
-                    <IconButton
-                      onClick={() => {
-                        setConfirmOpen(true);
-                        setDeleteId(user._id);
-                      }}
-                      color="error"
-                    >
-                      <Delete />
-                    </IconButton>
-                  </Tooltip>
-                </TableCell>
-              </TableRow>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mt: 2 }}>
+          <Typography>Rows per page:</Typography>
+          <Select value={pageSize} onChange={handleLimitChange} size="small">
+            {[5, 10, 20, 50].map((size) => (
+              <MenuItem key={size} value={size}>
+                {size}
+              </MenuItem>
             ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+          </Select>
+        </Box>
+        <TableContainer component={Paper} sx={{ mt: 2 }}>
+          <Table stickyHeader>
+            <TableHead>
+              <TableRow>
+                <TableCell>ID</TableCell>
+                <TableCell>Full Name</TableCell>
+                <TableCell>Username</TableCell>
+                <TableCell>Role</TableCell>
+                <TableCell>Created At</TableCell>
+                <TableCell>Updated At</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {users?.data?.map((user) => (
+                <TableRow key={user._id}>
+                  <TableCell>{user.id}</TableCell>
+                  <TableCell>{user.name}</TableCell>
+                  <TableCell>{user.username}</TableCell>
+                  <TableCell>{user.role}</TableCell>
+                  <TableCell>{user.createdAt}</TableCell>
+                  <TableCell>{user.updatedAt}</TableCell>
+                  <TableCell>
+                    <Tooltip title="Edit">
+                      <IconButton onClick={() => setEditingUser(user)}>
+                        <Edit />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete">
+                      <IconButton
+                        onClick={() => {
+                          setConfirmOpen(true);
+                          setDeleteId(user._id);
+                        }}
+                        color="error"
+                      >
+                        <Delete />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
 
-      <Pagination
-        count={Math.ceil(totalItems / pageSize)}
-        page={pageNumber}
-        onChange={handlePageChange}
-        sx={{ mt: 2, display: "flex", justifyContent: "center" }}
-      />
+        <Pagination
+          count={Math.ceil(totalItems / pageSize)}
+          page={pageNumber}
+          onChange={handlePageChange}
+          sx={{ mt: 2, display: "flex", justifyContent: "center" }}
+        />
 
-      <ConfirmDialog
-        open={confirmOpen}
-        message="Are you sure you want to delete this user?"
-        onConfirm={() => handleDelete(deleteId)}
-        onClose={() => setConfirmOpen(false)}
-      />
-    </Box>
+        <ConfirmDialog
+          open={confirmOpen}
+          message="Are you sure you want to delete this user?"
+          onConfirm={() => handleDelete(deleteId)}
+          onClose={() => setConfirmOpen(false)}
+        />
+      </Box>
+    </AdminDashboard>
   );
 };
 

@@ -24,19 +24,22 @@ const App = () => {
           <Route path="/signup" element={<SignUpPage />} />
           <Route path="/Signin" element={<SignInPage />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-
-          {/* Client */}
-          <Route path="/business-management" element={<BusinessManagement />} />
-          <Route path="/category-management" element={<CategoryManagement />} />
-          <Route path="/admin/users/:id" element={<AdminUserEdit />} />
           <Route path="/card-page" element={<CartPage />} />
 
+          {/* Client */}
+          <Route
+            path="/client/category-management"
+            element={<CategoryManagement />}
+          />
+
           {/* Admin */}
+          <Route path="/business-management" element={<BusinessManagement />} />
           <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
           <Route
             path="/admin/user-management"
             element={<AdminUserManagement />}
           />
+          <Route path="/admin/users/:id" element={<AdminUserEdit />} />
         </Routes>
       </Router>
     </>
