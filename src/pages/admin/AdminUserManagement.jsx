@@ -20,6 +20,9 @@ import {
   Pagination,
   Select,
   MenuItem,
+  Select,
+  MenuItem,
+  TablePagination,
 } from "@mui/material";
 import { Edit, Delete } from "@mui/icons-material";
 import { Helmet } from "react-helmet";
@@ -90,7 +93,7 @@ const AdminUserManagement = () => {
       <Helmet>
         <title>{title}</title>
       </Helmet>
-      <Typography variant="h5" fontWeight="bold">
+      <Typography variant="h5" fontWeight="bold" sx={{ mb: 2 }}>
         Welcome to {title}
       </Typography>
 
@@ -109,7 +112,7 @@ const AdminUserManagement = () => {
         </Select>
       </Box>
       <TableContainer component={Paper} sx={{ mt: 2 }}>
-        <Table>
+        <Table stickyHeader>
           <TableHead>
             <TableRow>
               <TableCell>ID</TableCell>
@@ -140,7 +143,7 @@ const AdminUserManagement = () => {
                     <IconButton
                       onClick={() => {
                         setConfirmOpen(true);
-                        setDeleteId(user.id);
+                        setDeleteId(user._id);
                       }}
                       color="error"
                     >
