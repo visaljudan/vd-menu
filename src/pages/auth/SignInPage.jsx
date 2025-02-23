@@ -26,6 +26,7 @@ import api from "../../api/axiosConfig";
 import { toast } from "react-toastify";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import GoogleButton from "../../components/GoogleButton";
 
 const SignInPage = () => {
   const navigate = useNavigate();
@@ -208,14 +209,15 @@ const SignInPage = () => {
                     {loading ? "Signing In ..." : "Sign In"}
                   </Button>
 
-                  <Button
+                  {/* <Button
                     fullWidth
                     variant="outlined"
                     startIcon={<GoogleIcon />}
                     sx={{ mt: 1 }}
                   >
                     Login with Google
-                  </Button>
+                  </Button> */}
+                  <GoogleButton />
                   <Grid container justifyContent="flex-end" marginTop={"16px"}>
                     <Grid item>
                       <Typography variant="body2" component="span">

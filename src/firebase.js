@@ -1,21 +1,19 @@
-// Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getStorage } from "firebase/storage";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
-// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCXrNI6ahZeF1iWorJck3H7QgqbViCcQNY",
-  authDomain: "jojuh-image.firebaseapp.com",
-  projectId: "jojuh-image",
-  storageBucket: "jojuh-image.appspot.com",
-  messagingSenderId: "480711513027",
-  appId: "1:480711513027:web:89fc4dbfa14e08bfdc2376",
+  apiKey: "AIzaSyC0YyIcyaKkXRQPeI_yzWRNlqlFFX24al0",
+  authDomain: "coffee-managements.firebaseapp.com",
+  projectId: "coffee-managements",
+  storageBucket: "coffee-managements.appspot.com",
+  messagingSenderId: "752217173433",
+  appId: "1:752217173433:web:d8967ed71deb6305a8da68",
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const storage = getStorage(app);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
 
-export { storage };
+export { storage, auth, provider, signInWithPopup };
