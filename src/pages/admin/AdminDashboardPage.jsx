@@ -1,4 +1,16 @@
-import { Container, Grid, Paper, Typography, Box, Drawer, List, ListItem, ListItemIcon, ListItemText } from "@mui/material";
+import {
+  Container,
+  Grid,
+  Paper,
+  Typography,
+  Box,
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Link,
+} from "@mui/material";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import GroupIcon from "@mui/icons-material/Group";
 import HomeWorkIcon from "@mui/icons-material/HomeWork";
@@ -26,42 +38,60 @@ const AdminDashboardPage = () => {
             width: 240,
             boxSizing: "border-box",
             backgroundColor: "#121212",
-            color: "white"
+            color: "white",
           },
         }}
       >
-        <Typography variant="h6" sx={{ p: 2, textAlign: "center" }}>Admin Panel</Typography>
+        <Typography variant="h6" sx={{ p: 2, textAlign: "center" }}>
+          Admin Panel
+        </Typography>
         <List>
           <ListItem button>
-            <ListItemIcon><DashboardIcon style={{ color: "white" }} /></ListItemIcon>
+            <ListItemIcon>
+              <DashboardIcon style={{ color: "white" }} />
+            </ListItemIcon>
             <ListItemText primary="Overview" />
           </ListItem>
           <ListItem button>
-            <ListItemIcon><PeopleIcon style={{ color: "white" }} /></ListItemIcon>
-            <ListItemText primary="Customers" />
+            <ListItemIcon>
+              <PeopleIcon style={{ color: "white" }} />
+            </ListItemIcon>
+            <ListItemText primary="Clients" />
           </ListItem>
           <ListItem button>
-            <ListItemIcon><ShoppingCartIcon style={{ color: "white" }} /></ListItemIcon>
+            <ListItemIcon>
+              <ShoppingCartIcon style={{ color: "white" }} />
+            </ListItemIcon>
             <ListItemText primary="Products" />
           </ListItem>
           <ListItem button>
-            <ListItemIcon><ReceiptIcon style={{ color: "white" }} /></ListItemIcon>
+            <ListItemIcon>
+              <ReceiptIcon style={{ color: "white" }} />
+            </ListItemIcon>
             <ListItemText primary="Orders" />
           </ListItem>
           <ListItem button>
-            <ListItemIcon><WorkIcon style={{ color: "white" }} /></ListItemIcon>
+            <ListItemIcon>
+              <WorkIcon style={{ color: "white" }} />
+            </ListItemIcon>
             <ListItemText primary="Jobs" />
           </ListItem>
           <ListItem button>
-            <ListItemIcon><LocalShippingIcon style={{ color: "white" }} /></ListItemIcon>
+            <ListItemIcon>
+              <LocalShippingIcon style={{ color: "white" }} />
+            </ListItemIcon>
             <ListItemText primary="Logistics" />
           </ListItem>
-          <ListItem button onClick={() => navigate("/user-management")}>
-            <ListItemIcon><PersonIcon style={{ color: "white" }} /></ListItemIcon>
+          <ListItem button onClick={() => navigate("/admin/user-management")}>
+            <ListItemIcon>
+              <PersonIcon style={{ color: "white" }} />
+            </ListItemIcon>
             <ListItemText primary="User Management" />
           </ListItem>
           <ListItem button>
-            <ListItemIcon><SettingsIcon style={{ color: "white" }} /></ListItemIcon>
+            <ListItemIcon>
+              <SettingsIcon style={{ color: "white" }} />
+            </ListItemIcon>
             <ListItemText primary="Settings" />
           </ListItem>
         </List>

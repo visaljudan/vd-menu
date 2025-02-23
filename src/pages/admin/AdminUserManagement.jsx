@@ -20,8 +20,6 @@ import {
   Pagination,
   Select,
   MenuItem,
-  Select,
-  MenuItem,
   TablePagination,
 } from "@mui/material";
 import { Edit, Delete } from "@mui/icons-material";
