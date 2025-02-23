@@ -26,6 +26,7 @@ import { Edit, Delete } from "@mui/icons-material";
 import { Helmet } from "react-helmet";
 import api from "../../api/axiosConfig"; 
 import { Link } from "react-router-dom";
+import { Add, MoreVert } from "@mui/icons-material";
 
 const ConfirmDialog = ({ message, onConfirm, onClose, open }) => (
   <Dialog open={open} onClose={onClose}>
@@ -48,7 +49,7 @@ const AdminUserManagement = () => {
   const [pageSize, setPageSize] = useState(10);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
-
+  const [search, setSearch] = useState("");
 
   const handlePageChange = (_event, newPage) => {
     setPageNumber(newPage);
@@ -84,14 +85,30 @@ const AdminUserManagement = () => {
     getUsers();
   }, [pageNumber, pageSize]);
 
+ 
+
   return (
     <Box sx={{ padding: 4 }}>
       <Helmet>
         <title>{title}</title>
       </Helmet>
-      <Typography variant="h5" fontWeight="bold">
+      <Typography variant="h5" fontWeight="bold" sx={{ mb: 2 }} >
         Welcome to {title}
       </Typography>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Search user..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                sx={{ width: "250px" }}
+              />
+              <Button  variant="contained" >
+                New User
+              </Button>
+            </Box>
+
       <TableContainer component={Paper} sx={{ mt: 2 }}>
         <Table stickyHeader>
           <TableHead>

@@ -10,6 +10,9 @@ import SignInPage from "./pages/auth/SignInPage";
 import AdminUserManagement from "./pages/admin/AdminUserManagement";
 import AdminUserEdit from "./pages/admin/AdminUserEdit"
 import CartPage from "./pages/customer/CartPage";
+import AdminDashboardPage from "./pages/admin/AdminDashboardPage"
+
+
 const App = () => {
   return (
     <>
@@ -26,6 +29,7 @@ const App = () => {
           <Route path="/user-management" element={<AdminUserManagement />} />
           <Route path="/admin/users/:id" element={<AdminUserEdit />} />
           <Route path="/card-page" element={<CartPage />} />
+          <Route path="/AdminDashboar-dPage" element={<AdminDashboardPage />} />
         </Routes>
       </Router>
     </>
