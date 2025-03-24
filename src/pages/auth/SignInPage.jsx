@@ -53,13 +53,15 @@ const SignInPage = () => {
       dispatch(signInStart());
       
       const response = await api.post("/v1/auth/signin", formData);
-      const { token, role } = response.data;
+      // const { token, role } = response.data.data;
 
-      localStorage.setItem("authToken", token);
-      localStorage.setItem("userRole", role);
-      dispatch(signInSuccess(response.data));
+      const data = response.data.data;
+      const token = data.token;
+      const userRole = data.user.roleId.slug;
+      // Set Authorization header for future API requests
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
-      if (role === "admin") {
+      if (userRole === "admin") {
         navigate("/admin/user-management");
       } else {
         navigate("/client/category-management");
