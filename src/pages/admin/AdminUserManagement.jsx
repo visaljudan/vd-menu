@@ -24,8 +24,9 @@ import {
 } from "@mui/material";
 import { Edit, Delete } from "@mui/icons-material";
 import { Helmet } from "react-helmet";
-import api from "../../api/axiosConfig"; // Ensure this path is correct
-import AdminDashboard from "../../components/AdminDashboard";
+import api from "../../api/axiosConfig"; 
+import { Link } from "react-router-dom";
+
 
 const ConfirmDialog = ({ message, onConfirm, onClose, open }) => (
   <Dialog open={open} onClose={onClose}>
@@ -47,7 +48,6 @@ const AdminUserManagement = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [pageNumber, setPageNumber] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [editingUser, setEditingUser] = useState(null);
@@ -88,7 +88,7 @@ const AdminUserManagement = () => {
 
   console.log(pageSize);
   return (
-    <AdminDashboard>
+    <>
       <Box sx={{ padding: 4 }}>
         <Helmet>
           <title>{title}</title>
@@ -100,17 +100,6 @@ const AdminUserManagement = () => {
         <Button variant="contained" onClick={() => setEditingUser({})}>
           Add User
         </Button>
-
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mt: 2 }}>
-          <Typography>Rows per page:</Typography>
-          <Select value={pageSize} onChange={handleLimitChange} size="small">
-            {[5, 10, 20, 50].map((size) => (
-              <MenuItem key={size} value={size}>
-                {size}
-              </MenuItem>
-            ))}
-          </Select>
-        </Box>
         <TableContainer component={Paper} sx={{ mt: 2 }}>
           <Table stickyHeader>
             <TableHead>
@@ -135,7 +124,10 @@ const AdminUserManagement = () => {
                   <TableCell>{user.updatedAt}</TableCell>
                   <TableCell>
                     <Tooltip title="Edit">
-                      <IconButton onClick={() => setEditingUser(user)}>
+                      <IconButton onClick={() => setEditingUser(user)} 
+                        component={Link}
+                        to={`/admin/users/${user._id}`}
+                        >
                         <Edit />
                       </IconButton>
                     </Tooltip>
@@ -156,14 +148,20 @@ const AdminUserManagement = () => {
             </TableBody>
           </Table>
         </TableContainer>
-
-        <Pagination
-          count={Math.ceil(totalItems / pageSize)}
-          page={pageNumber}
-          onChange={handlePageChange}
-          sx={{ mt: 2, display: "flex", justifyContent: "center" }}
+      <Box p={2}>
+        <TablePagination
+          component="div"
+          count={totalItems}
+          page={pageNumber - 1}
+          onPageChange={(_, newPage) => setPageNumber(newPage + 1)}
+          rowsPerPage={pageSize}
+          onRowsPerPageChange={(event) => {
+            setPageSize(parseInt(event.target.value, 10));
+            setPageNumber(1);
+          }}
+          rowsPerPageOptions={[5, 10, 20, 50]}
         />
-
+      </Box>
         <ConfirmDialog
           open={confirmOpen}
           message="Are you sure you want to delete this user?"
@@ -171,7 +169,7 @@ const AdminUserManagement = () => {
           onClose={() => setConfirmOpen(false)}
         />
       </Box>
-    </AdminDashboard>
+    </>
   );
 };
 

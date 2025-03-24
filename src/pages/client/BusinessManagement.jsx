@@ -19,6 +19,7 @@ import {
   DialogContent,
   DialogActions,
   Tooltip,
+  TablePagination,
 } from "@mui/material";
 import { Edit, Add, Close } from "@mui/icons-material";
 import DeleteTwoToneIcon from "@mui/icons-material/DeleteTwoTone";
@@ -39,6 +40,9 @@ const ConfirmDialog = ({ message, onConfirm, onClose, open }) => (
 
 export default function BusinessManagement() {
   const title = "Business Management";
+  const [totalItems, setTotalItems] = useState(0);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [businesses, setBusinesses] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState({ status: "All" });
@@ -55,11 +59,18 @@ export default function BusinessManagement() {
     status: "Active",
   });
 
-  useEffect(() => {
-    fetch("https://list.free.mockoapp.net/Business")
-      .then((res) => res.json())
-      .then(setBusinesses);
-  }, []);
+  const getBusinesses = async () => {
+    try {
+      const res = await api.get(
+        `/v1/businesses?page=${pageNumber}&limit=${pageSize}`
+      );
+      const data = res.data.data;
+      setBusinesses(data);
+      setTotalItems(data.total);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -238,6 +249,20 @@ export default function BusinessManagement() {
           </TableBody>
         </Table>
       </TableContainer>
+      <Box p={2}>
+        <TablePagination
+          component="div"
+          count={totalItems}
+          page={pageNumber - 1}
+          onPageChange={(_, newPage) => setPageNumber(newPage + 1)}
+          rowsPerPage={pageSize}
+          onRowsPerPageChange={(event) => {
+            setPageSize(parseInt(event.target.value, 10));
+            setPageNumber(1);
+          }}
+          rowsPerPageOptions={[5, 10, 20, 50]}
+        />
+      </Box>
 
       <Dialog open={open} onClose={() => setOpen(false)}>
         <DialogTitle>

@@ -11,7 +11,7 @@ import AdminUserManagement from "./pages/admin/AdminUserManagement";
 import AdminUserEdit from "./pages/admin/AdminUserEdit";
 import CartPage from "./pages/customer/CartPage";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
-
+import ItemManagementPage from "./pages/client/ItemManagementPage";
 const App = () => {
   return (
     <>
@@ -31,7 +31,7 @@ const App = () => {
             path="/client/category-management"
             element={<CategoryManagement />}
           />
-
+          <Route path="client/item-management" element={<ItemManagementPage/>} />
           {/* Admin */}
           <Route path="/business-management" element={<BusinessManagement />} />
           <Route path="/admin/dashboard" element={<AdminDashboardPage />} />

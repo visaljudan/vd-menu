@@ -57,9 +57,15 @@ console.log(formData);
     add();
   };
 
+  // const save = async () => {
+  //   await api.patch(`/v1/users/${id}`, formData);
+  //   navigate(`?refresh=true`);
+  // };
+
   const save = async () => {
-    await api.patch(`/v1/users/${id}`, formData);
-    navigate(`?refresh=true`);
+    await http.put(`/v1/users/${id}`, formData);
+    const path = getBackRoute(router);
+    await router.push(`${path}?refresh=true`);
   };
 
   // const add = async () => {

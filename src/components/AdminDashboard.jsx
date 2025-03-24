@@ -1,109 +1,150 @@
-import React from "react";
-import {
-  Box,
-  Drawer,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Typography,
-  Container,
-  Paper,
-} from "@mui/material";
-import { useNavigate } from "react-router-dom";
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import SettingsIcon from "@mui/icons-material/Settings";
-import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
-import PeopleIcon from "@mui/icons-material/People";
-import WorkIcon from "@mui/icons-material/Work";
-import LocalShippingIcon from "@mui/icons-material/LocalShipping";
-import ReceiptIcon from "@mui/icons-material/Receipt";
-import PersonIcon from "@mui/icons-material/Person";
+import * as React from 'react';
+import { extendTheme, styled } from '@mui/material/styles';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import BarChartIcon from '@mui/icons-material/BarChart';
+import DescriptionIcon from '@mui/icons-material/Description';
+import LayersIcon from '@mui/icons-material/Layers';
+import { AppProvider } from '@toolpad/core/AppProvider';
+import { DashboardLayout } from '@toolpad/core/DashboardLayout';
+import { PageContainer } from '@toolpad/core/PageContainer';
+import Grid from '@mui/material/Grid2';
 
-const drawerWidth = 240;
+const NAVIGATION = [
+  {
+    kind: 'header',
+    title: 'Main items',
+  },
+  {
+    segment: 'dashboard',
+    title: 'Dashboard',
+    icon: <DashboardIcon />,
+  },
+  {
+    segment: 'orders',
+    title: 'Orders',
+    icon: <ShoppingCartIcon />,
+  },
+  {
+    kind: 'divider',
+  },
+  {
+    kind: 'header',
+    title: 'Analytics',
+  },
+  {
+    segment: 'reports',
+    title: 'Reports',
+    icon: <BarChartIcon />,
+    children: [
+      {
+        segment: 'sales',
+        title: 'Sales',
+        icon: <DescriptionIcon />,
+      },
+      {
+        segment: '/admin/user-management',
+        title: 'User Management',
+        icon: <DescriptionIcon />,
+      },
+    ],
+  },
+  {
+    segment: 'integrations',
+    title: 'Integrations',
+    icon: <LayersIcon />,
+  },
+];
 
-const AdminDashboard = ({ children }) => {
-  const navigate = useNavigate();
+const demoTheme = extendTheme({
+  colorSchemes: { light: true, dark: true },
+  colorSchemeSelector: 'class',
+  breakpoints: {
+    values: {
+      xs: 0,
+      sm: 600,
+      md: 600,
+      lg: 1200,
+      xl: 1536,
+    },
+  },
+});
+
+function useDemoRouter(initialPath) {
+  const [pathname, setPathname] = React.useState(initialPath);
+
+  const router = React.useMemo(() => {
+    return {
+      pathname,
+      searchParams: new URLSearchParams(),
+      navigate: (path) => setPathname(String(path)),
+    };
+  }, [pathname]);
+
+  return router;
+}
+
+const Skeleton = styled('div')(({ theme, height }) => ({
+  backgroundColor: theme.palette.action.hover,
+  borderRadius: theme.shape.borderRadius,
+  height,
+  content: '" "',
+}));
+
+export default function DashboardLayoutBasic(props) {
+  const { window } = props;
+
+  const router = useDemoRouter('/dashboard');
+
+  // Remove this const when copying and pasting into your project.
+  const demoWindow = window ? window() : undefined;
 
   return (
-    <Box sx={{ display: "flex" }}>
-      <Drawer
-        variant="permanent"
-        sx={{
-          width: drawerWidth,
-          flexShrink: 0,
-          "& .MuiDrawer-paper": {
-            width: drawerWidth,
-            boxSizing: "border-box",
-            backgroundColor: "#121212",
-            color: "white",
-          },
-        }}
-      >
-        <Typography variant="h6" sx={{ p: 2, textAlign: "center" }}>
-          Admin Panel
-        </Typography>
-        <List>
-          <ListItem button>
-            <ListItemIcon>
-              <DashboardIcon style={{ color: "white" }} />
-            </ListItemIcon>
-            <ListItemText primary="Overview" />
-          </ListItem>
-          <ListItem button>
-            <ListItemIcon>
-              <PeopleIcon style={{ color: "white" }} />
-            </ListItemIcon>
-            <ListItemText primary="Clients" />
-          </ListItem>
-          <ListItem button>
-            <ListItemIcon>
-              <ShoppingCartIcon style={{ color: "white" }} />
-            </ListItemIcon>
-            <ListItemText primary="Products" />
-          </ListItem>
-          <ListItem button>
-            <ListItemIcon>
-              <ReceiptIcon style={{ color: "white" }} />
-            </ListItemIcon>
-            <ListItemText primary="Orders" />
-          </ListItem>
-          <ListItem button>
-            <ListItemIcon>
-              <WorkIcon style={{ color: "white" }} />
-            </ListItemIcon>
-            <ListItemText primary="Jobs" />
-          </ListItem>
-          <ListItem button>
-            <ListItemIcon>
-              <LocalShippingIcon style={{ color: "white" }} />
-            </ListItemIcon>
-            <ListItemText primary="Logistics" />
-          </ListItem>
-          <ListItem button onClick={() => navigate("/admin/user-management")}>
-            <ListItemIcon>
-              <PersonIcon style={{ color: "white" }} />
-            </ListItemIcon>
-            <ListItemText primary="User Management" />
-          </ListItem>
-          <ListItem button>
-            <ListItemIcon>
-              <SettingsIcon style={{ color: "white" }} />
-            </ListItemIcon>
-            <ListItemText primary="Settings" />
-          </ListItem>
-        </List>
-      </Drawer>
+    <AppProvider
+      navigation={NAVIGATION}
+      router={router}
+      theme={demoTheme}
+      window={demoWindow}
+    >
+      <DashboardLayout>
+        <PageContainer>
+          <Grid container spacing={1}>
+            <Grid size={5} />
+            <Grid size={12}>
+              <Skeleton height={14} />
+            </Grid>
+            <Grid size={12}>
+              <Skeleton height={14} />
+            </Grid>
+            <Grid size={4}>
+              <Skeleton height={100} />
+            </Grid>
+            <Grid size={8}>
+              <Skeleton height={100} />
+            </Grid>
 
-      <Box component="main">
-        <Paper sx={{ p: 3 }}>
-          {children || (
-            <Typography variant="h5">Welcome to Admin Dashboard</Typography>
-          )}
-        </Paper>
-      </Box>
-    </Box>
+            <Grid size={12}>
+              <Skeleton height={150} />
+            </Grid>
+            <Grid size={12}>
+              <Skeleton height={14} />
+            </Grid>
+
+            <Grid size={3}>
+              <Skeleton height={100} />
+            </Grid>
+            <Grid size={3}>
+              <Skeleton height={100} />
+            </Grid>
+            <Grid size={3}>
+              <Skeleton height={100} />
+            </Grid>
+            <Grid size={3}>
+              <Skeleton height={100} />
+            </Grid>
+          </Grid>
+        </PageContainer>
+      </DashboardLayout>
+    </AppProvider>
   );
-};
-
-export default AdminDashboard;
+}
