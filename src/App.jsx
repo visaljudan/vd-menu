@@ -12,6 +12,7 @@ import AdminUserEdit from "./pages/admin/AdminUserEdit";
 import CartPage from "./pages/customer/CartPage";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import ItemManagementPage from "./pages/client/ItemManagementPage";
+import AdminDashboard from "./components/AdminDashboard"
 const App = () => {
   return (
     <>
@@ -39,6 +40,7 @@ const App = () => {
             path="/admin/user-management"
             element={<AdminUserManagement />}
           />
+          <Route path="/AdminDashboard" element={<AdminDashboard/>}/>
           <Route path="/admin/users/:id" element={<AdminUserEdit />} />
         </Routes>
       </Router>
