@@ -10,9 +10,9 @@ import SignInPage from "./pages/auth/SignInPage";
 import AdminUserManagement from "./pages/admin/AdminUserManagement";
 import AdminUserEdit from "./pages/admin/AdminUserEdit";
 import CartPage from "./pages/customer/CartPage";
-import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
+// import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import ItemManagementPage from "./pages/client/ItemManagementPage";
-import AdminDashboard from "./components/AdminDashboard"
+import ZTestPage from "./pages/ZTestPage";
 const App = () => {
   return (
     <>
@@ -32,16 +32,19 @@ const App = () => {
             path="/client/category-management"
             element={<CategoryManagement />}
           />
-          <Route path="client/item-management" element={<ItemManagementPage/>} />
+          <Route
+            path="client/item-management"
+            element={<ItemManagementPage />}
+          />
           {/* Admin */}
           <Route path="/business-management" element={<BusinessManagement />} />
-          <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+          {/* <Route path="/admin/dashboard" element={<AdminDashboardPage />} /> */}
           <Route
             path="/admin/user-management"
             element={<AdminUserManagement />}
           />
-          <Route path="/AdminDashboard" element={<AdminDashboard/>}/>
           <Route path="/admin/users/:id" element={<AdminUserEdit />} />
+          <Route path="/test" element={<ZTestPage />} />
         </Routes>
       </Router>
     </>

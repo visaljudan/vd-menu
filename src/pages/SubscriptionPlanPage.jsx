@@ -1,9 +1,7 @@
-import React from 'react'
+import React from "react";
 
 const SubscriptionPlanPage = () => {
-  return (
-    <div>SubscriptionPlanPage</div>
-  )
-}
+  return <div>SubscriptionPlanPage</div>;
+};
 
-export default SubscriptionPlanPage
+export default SubscriptionPlanPage;
