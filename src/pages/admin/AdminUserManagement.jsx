@@ -71,7 +71,7 @@ const AdminUserManagement = () => {
   const getUsers = async () => {
     try {
       const res = await api.get(
-        `/v1/users?page=${pageNumber}&limit=${pageSize}`,
+        `api/v1/users?page=${pageNumber}&limit=${pageSize}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -88,7 +88,7 @@ const AdminUserManagement = () => {
 
   const handleDelete = async (id) => {
     try {
-      const response = await api.delete(`/v1/users/${id}`, {
+      const response = await api.delete(`api/v1/users/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

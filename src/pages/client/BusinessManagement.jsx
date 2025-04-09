@@ -24,6 +24,7 @@ import {
 import { Edit, Add, Close } from "@mui/icons-material";
 import DeleteTwoToneIcon from "@mui/icons-material/DeleteTwoTone";
 import { Helmet } from "react-helmet";
+import MainLayout from "../../layouts/MainLayout";
 
 const ConfirmDialog = ({ message, onConfirm, onClose, open }) => (
   <Dialog open={open} onClose={onClose}>
@@ -39,6 +40,10 @@ const ConfirmDialog = ({ message, onConfirm, onClose, open }) => (
 );
 
 export default function BusinessManagement() {
+  const { currentUser } = useSelector((state) => state.user);
+    const user = currentUser?.user;
+    const token = currentUser?.token;
+
   const title = "Business Management";
   const [totalItems, setTotalItems] = useState(0);
   const [pageNumber, setPageNumber] = useState(1);
@@ -62,7 +67,7 @@ export default function BusinessManagement() {
   const getBusinesses = async () => {
     try {
       const res = await api.get(
-        `/v1/businesses?page=${pageNumber}&limit=${pageSize}`
+        `api/v1/businesses?page=${pageNumber}&limit=${pageSize}`
       );
       const data = res.data.data;
       setBusinesses(data);
@@ -118,6 +123,7 @@ export default function BusinessManagement() {
   );
 
   return (
+    <MainLayout>
     <Box sx={{ p: 4 }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
         <Helmet>
@@ -317,5 +323,6 @@ export default function BusinessManagement() {
         onClose={() => setConfirmOpen(false)}
       />
     </Box>
+    </MainLayout>
   );
 }

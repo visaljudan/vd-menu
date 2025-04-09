@@ -38,7 +38,7 @@ function AdminUserEdit() {
   // Fetch user details
   const getUser = async (id) => {
     try {
-      const response = await api.get(`/v1/users/${id}`, {
+      const response = await api.get(`api/v1/users/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setFormData(response.data.data);
@@ -65,7 +65,7 @@ function AdminUserEdit() {
 
   const save = async () => {
     try {
-      await api.patch(`/v1/users/${id}`, formData, {
+      await api.patch(`api/v1/users/${id}`, formData, {
         headers: { Authorization: `Bearer ${token}` },
       });
       toast.success("User updated successfully!");
@@ -78,7 +78,7 @@ function AdminUserEdit() {
   const add = async () => {
     console.log(formData);
     try {
-      await api.post("/v1/auth/signup", formData);
+      await api.post("api/v1/auth/signup", formData);
       toast.success("User created successfully!");
       navigate("/admin/user-management");
     } catch (error) {

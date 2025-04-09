@@ -10,9 +10,11 @@ import SignInPage from "./pages/auth/SignInPage";
 import AdminUserManagement from "./pages/admin/AdminUserManagement";
 import AdminUserEdit from "./pages/admin/AdminUserEdit";
 import CartPage from "./pages/customer/CartPage";
-// import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import ItemManagementPage from "./pages/client/ItemManagementPage";
 import ZTestPage from "./pages/ZTestPage";
+import AdminSubscriptionPlanManagementPage from"./pages/admin/AdminSubscriptionPlanManagementPage"
+import SubscriptionPlan from "./pages/SubscriptionPlanPage"
+
 const App = () => {
   return (
     <>
@@ -26,6 +28,7 @@ const App = () => {
           <Route path="/Signin" element={<SignInPage />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/card-page" element={<CartPage />} />
+          <Route path="/subscription-Plan" element={<SubscriptionPlan/>} />
 
           {/* Client */}
           <Route
@@ -38,11 +41,11 @@ const App = () => {
           />
           {/* Admin */}
           <Route path="/business-management" element={<BusinessManagement />} />
-          {/* <Route path="/admin/dashboard" element={<AdminDashboardPage />} /> */}
           <Route
             path="/admin/user-management"
             element={<AdminUserManagement />}
           />
+          <Route path="/admin/subscription-plan-management" element={<AdminSubscriptionPlanManagementPage/>}/>
           <Route path="/admin/users/:id" element={<AdminUserEdit />} />
           <Route path="/test" element={<ZTestPage />} />
         </Routes>

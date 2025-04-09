@@ -25,6 +25,8 @@ import {
 import { Edit, Delete } from "@mui/icons-material";
 import { Helmet } from "react-helmet";
 import api from "../../api/axiosConfig";
+import MainLayout from "../../layouts/MainLayout";
+import { useSelector } from "react-redux";
 
 const ConfirmDialog = ({ message, onConfirm, onClose, open }) => (
   <Dialog open={open} onClose={onClose}>
@@ -40,6 +42,7 @@ const ConfirmDialog = ({ message, onConfirm, onClose, open }) => (
 );
 
 const EditCategoryModal = ({ open, category, onClose, onSave }) => {
+  
   const [name, setName] = useState(category?.name || "");
   const [description, setDescription] = useState(category?.description || "");
 
@@ -119,7 +122,12 @@ const AddCategoryModal = ({ open, onClose, onSave }) => {
 };
 
 const CategoryManagement = () => {
+  const { currentUser } = useSelector((state) => state.user);
+    const user = currentUser?.user;
+    const token = currentUser?.token;
+
   const title = "Category Management";
+ 
   const [categories, setCategories] = useState([]);
   const [totalItems, setTotalItems] = useState(0);
   const [pageNumber, setPageNumber] = useState(1);
@@ -133,7 +141,13 @@ const CategoryManagement = () => {
   const getCategories = async () => {
     try {
       const res = await api.get(
-        `/v1/categories?page=${pageNumber}&limit=${pageSize}`
+        `api/v1/categories?page=${pageNumber}&limit=${pageSize}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+        
       );
       const data = res.data.data;
       setCategories(data);
@@ -144,13 +158,22 @@ const CategoryManagement = () => {
   };
 
   const onConfirm = async (id) => {
-    await api.delete(`/v1/categorise/${id}`);
+    await api.delete(`api/v1/categorise/${id}`),
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    };
     getCategories();
   };
 
   const handleEditSave = async (category) => {
     try {
-      await api.patch(`/v1/categories/${category._id}`, category);
+      await api.patch(`api/v1/categories/${category._id}`, category) , {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
       getCategories();
     } catch (error) {
       console.error("Error updating category:", error);
@@ -173,6 +196,7 @@ const CategoryManagement = () => {
   }, [pageNumber, pageSize]);
   console.log();
   return (
+    <MainLayout>
     <Box sx={{ padding: 4 }}>
       <Helmet>
         <title>{title}</title>
@@ -280,6 +304,7 @@ const CategoryManagement = () => {
         onClose={() => setConfirmOpen(false)}
       />
     </Box>
+    </MainLayout>
   );
 };
 

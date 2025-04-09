@@ -12,7 +12,7 @@ import { DashboardLayout } from "@toolpad/core/DashboardLayout";
 import { PageContainer } from "@toolpad/core/PageContainer";
 
 // Mock: Get role from authentication context (Replace with actual auth logic)
-const userRole = "admin"; // Change this based on user role (e.g., "admin" or "user")
+const userRole = ["admin", "user"]; // Change this based on user role (e.g., "admin" or "user")
 
 // Define navigation with role-based access and children
 const NAVIGATION = [
@@ -33,13 +33,19 @@ const NAVIGATION = [
     roles: ["admin"],
   },
   {
+    segment: "client/category-management",
+    title: "Category Management",
+    icon: <DescriptionIcon />,
+    roles: ["user"],
+  },
+  {
     segment: "admin/role-management",
     title: "Role Management",
     icon: <DescriptionIcon />,
     roles: ["admin"],
   },
   {
-    segment: "/business-management",
+    segment: "business-management",
     title: "Business Management",
     icon: <LayersIcon />,
     roles: ["admin"],
@@ -52,13 +58,13 @@ const NAVIGATION = [
     title: "Subscription",
   },
   {
-    segment: "/subscription-plan-management",
+    segment: "admin/subscription-plan-management",
     title: "Subscription Plan Management",
     icon: <ShoppingCartIcon />,
     roles: ["admin"],
   },
   {
-    segment: "/user-subscription-plan-management",
+    segment: "user-subscription-plan-management",
     title: "User-Subscription Plan Management",
     icon: <BarChartIcon />,
     roles: ["admin"],
@@ -89,15 +95,15 @@ const demoTheme = extendTheme({
   colorSchemeSelector: "class",
 });
 
-const filterNavigation = (nav, role) =>
+const filterNavigation = (nav, roles) =>
   nav
-    .filter((item) => !item.roles || item.roles.includes(role))
+    .filter((item) => !item.roles || item.roles.some((role) => roles.includes(role)))
     .map((item) =>
       item.children
         ? {
             ...item,
             children: item.children.filter((child) =>
-              child.roles.includes(role)
+              child.roles.some((role) => roles.includes(role))
             ),
           }
         : item

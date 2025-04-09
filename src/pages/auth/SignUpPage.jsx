@@ -116,7 +116,7 @@ const SignUpPage = () => {
     try {
       setLoading(true);
       dispatch(signUpStart());
-      const response = await api.post("/v1/auth/signup", formData);
+      const response = await api.post("api/v1/auth/signup", formData);
       const data = response.data;
       dispatch(signUpSuccess(data));
       navigate("/");

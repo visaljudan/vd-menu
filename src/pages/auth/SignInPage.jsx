@@ -56,7 +56,7 @@ const SignInPage = () => {
       setLoading(true);
       dispatch(signInStart());
 
-      const response = await api.post("/v1/auth/signin", formData);
+      const response = await api.post("api/v1/auth/signin", formData);
       // const { token, role } = response.data.data;
 
       const data = response.data.data;
