@@ -13,6 +13,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import api from "../../api/axiosConfig";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
+import MainLayout from "../../layouts/MainLayout";
 
 function AdminUserEdit() {
   const { id } = useParams();
@@ -87,64 +88,66 @@ function AdminUserEdit() {
   };
 
   return (
-    <Grid item sx={{ p: 3 }}>
-      <Grid container direction="row" justifyContent="center" spacing={3}>
-        <Grid item xs={12}>
-          <Card style={{ position: "relative" }}>
-            <CardHeader
-              action={
-                <Box>
-                  <Button variant="contained" onClick={onSubmit}>
-                    {id === "0" ? "Add" : "Save"}
-                  </Button>
+    <MainLayout>
+      <Grid item sx={{ p: 3 }}>
+        <Grid container direction="row" justifyContent="center" spacing={3}>
+          <Grid item xs={12}>
+            <Card style={{ position: "relative" }}>
+              <CardHeader
+                action={
+                  <Box>
+                    <Button variant="contained" onClick={onSubmit}>
+                      {id === "0" ? "Add" : "Save"}
+                    </Button>
+                  </Box>
+                }
+                title={title}
+              />
+              <Divider />
+              <CardContent>
+                <Box
+                  component="form"
+                  sx={{ "& .MuiTextField-root": { m: 1, width: "25ch" } }}
+                  noValidate
+                  autoComplete="off"
+                >
+                  <TextField
+                    required
+                    label="Name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                  />
+                  <TextField
+                    required
+                    label="Username"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleChange}
+                  />
+                  <TextField
+                    required
+                    label="Email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                  />
+                  {/* Password Field */}
+                  <TextField
+                    required
+                    label="Password"
+                    name="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                  />
                 </Box>
-              }
-              title={title}
-            />
-            <Divider />
-            <CardContent>
-              <Box
-                component="form"
-                sx={{ "& .MuiTextField-root": { m: 1, width: "25ch" } }}
-                noValidate
-                autoComplete="off"
-              >
-                <TextField
-                  required
-                  label="Name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                />
-                <TextField
-                  required
-                  label="Username"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleChange}
-                />
-                <TextField
-                  required
-                  label="Email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                />
-                {/* Password Field */}
-                <TextField
-                  required
-                  label="Password"
-                  name="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                />
-              </Box>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
       </Grid>
-    </Grid>
+    </MainLayout>
   );
 }
 

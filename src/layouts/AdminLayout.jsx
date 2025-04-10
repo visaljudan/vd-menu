@@ -1,7 +1,7 @@
 import React from "react";
-import { Box, CssBaseline } from "@mui/material"; // Make sure these are imported
-import Sidebar from "./Sidebar"; // Adjust path accordingly
-import Topbar from "./Topbar"; // Adjust path accordingly
+import { Box, CssBaseline } from "@mui/material";
+import Sidebar from "./Sidebar";
+import Topbar from "./Topbar";
 
 const AdminLayout = ({ children }) => {
   return (

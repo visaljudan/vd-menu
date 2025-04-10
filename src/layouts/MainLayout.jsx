@@ -1,62 +1,77 @@
 import * as React from "react";
-import { extendTheme, styled } from "@mui/material/styles";
-import { useNavigate } from "react-router-dom"; // Using react-router for navigation
+import { extendTheme } from "@mui/material/styles";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import DescriptionIcon from "@mui/icons-material/Description";
 import LayersIcon from "@mui/icons-material/Layers";
-import { List, ListItem, ListItemText, ListItemIcon } from "@mui/material";
 import { AppProvider } from "@toolpad/core/AppProvider";
 import { DashboardLayout } from "@toolpad/core/DashboardLayout";
 import { PageContainer } from "@toolpad/core/PageContainer";
+import { useSelector } from "react-redux";
+import {
+  AdminPanelSettings,
+  CategoryOutlined,
+  List,
+  PeopleOutline,
+  Settings,
+  Shop,
+  Store,
+  Telegram,
+} from "@mui/icons-material";
 
-// Mock: Get role from authentication context (Replace with actual auth logic)
-const userRole = ["admin", "user"]; // Change this based on user role (e.g., "admin" or "user")
-
-// Define navigation with role-based access and children
+// Navigation Config
 const NAVIGATION = [
+  { kind: "header", title: "Main" },
   {
-    kind: "header",
-    title: "Main",
-  },
-  {
-    segment: "/dashboard",
+    segment: "admin/dashboard",
     title: "Dashboard",
     icon: <DashboardIcon />,
-    roles: ["admin", "user"],
+    roles: ["admin"],
+  },
+  {
+    segment: "client/dashboard",
+    title: "Dashboard",
+    icon: <DashboardIcon />,
+    roles: ["user"],
+  },
+  { kind: "divider" },
+  { kind: "header", title: "User Managments", roles: ["admin"] },
+  {
+    segment: "admin/role-management",
+    title: "Role Management",
+    icon: <AdminPanelSettings />,
+    roles: ["admin"],
   },
   {
     segment: "admin/user-management",
     title: "User Management",
-    icon: <DescriptionIcon />,
+    icon: <PeopleOutline />,
     roles: ["admin"],
   },
+  { kind: "header", title: "Business", roles: ["user"] },
+  {
+    segment: "client/business-management",
+    title: "Business Management",
+    icon: <Store />,
+    roles: ["user"],
+  },
+
   {
     segment: "client/category-management",
     title: "Category Management",
-    icon: <DescriptionIcon />,
+    icon: <CategoryOutlined />,
     roles: ["user"],
   },
   {
-    segment: "admin/role-management",
-    title: "Role Management",
-    icon: <DescriptionIcon />,
-    roles: ["admin"],
+    segment: "client/item-management",
+    title: "Item Management",
+    icon: <List />,
+    roles: ["user"],
   },
-  {
-    segment: "business-management",
-    title: "Business Management",
-    icon: <LayersIcon />,
-    roles: ["admin"],
-  },
-  {
-    kind: "divider",
-  },
-  {
-    kind: "header",
-    title: "Subscription",
-  },
+
+  { kind: "divider" },
+  { kind: "header", title: "Subscription", roles: ["admin"] },
   {
     segment: "admin/subscription-plan-management",
     title: "Subscription Plan Management",
@@ -64,60 +79,122 @@ const NAVIGATION = [
     roles: ["admin"],
   },
   {
-    segment: "user-subscription-plan-management",
+    segment: "admin/user-subscription-plan-management",
     title: "User-Subscription Plan Management",
     icon: <BarChartIcon />,
     roles: ["admin"],
   },
+  { kind: "header", title: "Contacts", roles: ["user"] },
   {
-    kind: "divider",
+    segment: "client/telegram-management",
+    title: "Telegram Management",
+    icon: <Telegram />,
+    roles: ["user"],
   },
+  { kind: "divider" },
+  { kind: "header", title: "Businesses", roles: ["admin"] },
   {
-    kind: "header",
-    title: "Reports & Analysis",
+    segment: "admin/business-lists",
+    title: "Business Lists",
+    icon: <Store />,
+    roles: ["admin"],
   },
+  { kind: "header", title: "Orders", roles: ["user"] },
+
+  { kind: "divider" },
+  { kind: "header", title: "Reports & An  alysis" },
   {
-    segment: "/reports",
+    segment: "admin/reports",
     title: "Reports",
     icon: <DescriptionIcon />,
     roles: ["admin"],
   },
   {
-    segment: "/analysis",
+    segment: "admin/analysis",
     title: "Analysis",
     icon: <BarChartIcon />,
     roles: ["admin"],
   },
+
+  { kind: "divider" },
+  { kind: "header", title: "Settings" },
+  {
+    segment: "admin/settings",
+    title: "Settings",
+    icon: <Settings />,
+    roles: ["admin"],
+  },
+  {
+    segment: "client/settings",
+    title: "Settings",
+    icon: <Settings />,
+    roles: ["user"],
+  },
 ];
 
+// Theme Setup
 const demoTheme = extendTheme({
-  colorSchemes: { light: true, dark: true },
+  colorSchemes: { light: {}, dark: {} },
   colorSchemeSelector: "class",
 });
 
+// Navigation Filter Function
 const filterNavigation = (nav, roles) =>
   nav
-    .filter((item) => !item.roles || item.roles.some((role) => roles.includes(role)))
-    .map((item) =>
-      item.children
-        ? {
-            ...item,
-            children: item.children.filter((child) =>
-              child.roles.some((role) => roles.includes(role))
-            ),
-          }
-        : item
-    );
+    .filter((item) => {
+      if (!item.roles) return true;
+      return item.roles.some((role) => roles.includes(role));
+    })
+    .map((item) => {
+      if (item.children) {
+        return {
+          ...item,
+          children: item.children.filter((child) =>
+            child.roles?.some((role) => roles.includes(role))
+          ),
+        };
+      }
+      return item;
+    });
 
-const filteredNavigation = filterNavigation(NAVIGATION, userRole);
+// Extract header title by role
+const getHeaderTitleByRole = (nav, roles) => {
+  const header = nav.find(
+    (item) =>
+      item.kind === "header" && item.roles?.some((role) => roles.includes(role))
+  );
+  return header?.title || "VD Menu";
+};
 
+// Header component
+const Header = ({ title }) => (
+  <div className="p-4 bg-white shadow-md">
+    <h1 className="text-xl font-semibold">{title}</h1>
+  </div>
+);
+
+// Main layout component
 const MainLayout = ({ children }) => {
-  const navigate = useNavigate(); // Using React Router for navigation
+  const { currentUser } = useSelector((state) => state.user);
+  const user = currentUser?.user;
+
+  const userRole = user?.roleId?.slug ? [user.roleId.slug] : [];
+
+  const filteredNavigation = React.useMemo(() => {
+    return filterNavigation(NAVIGATION, userRole);
+  }, [userRole]);
+
+  const headerTitle = React.useMemo(() => {
+    return getHeaderTitleByRole(NAVIGATION, userRole);
+  }, [userRole]);
 
   return (
-    <AppProvider navigation={filteredNavigation} theme={demoTheme}>
-      <DashboardLayout>
-        <PageContainer>{children}</PageContainer>
+    <AppProvider theme={demoTheme}>
+      <DashboardLayout navigation={filteredNavigation}>
+        <PageContainer>
+          <Header title={headerTitle} />
+          <div className="p-4">{children}</div>
+        </PageContainer>
       </DashboardLayout>
     </AppProvider>
   );

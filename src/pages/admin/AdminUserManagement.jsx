@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import {
   Box,
   Button,
-  TextField,
   Table,
   TableBody,
   TableCell,
@@ -17,19 +16,16 @@ import {
   DialogContent,
   DialogActions,
   Tooltip,
-  Pagination,
-  Select,
-  MenuItem,
   TablePagination,
 } from "@mui/material";
+import MainLayout from "../../layouts/MainLayout";
+import api from "../../api/axiosConfig";
 import { Edit, Delete } from "@mui/icons-material";
 import { Helmet } from "react-helmet";
-import api from "../../api/axiosConfig";
 import { Link } from "react-router-dom";
-import AdminLayout from "../../layouts/AdminLayout";
 import { useSelector } from "react-redux";
-import MainLayout from "../../layouts/MainLayout";
 import { toast } from "react-toastify";
+import Loading from "../../components/Loading";
 
 const ConfirmDialog = ({ message, onConfirm, onClose, open }) => (
   <Dialog open={open} onClose={onClose}>
@@ -55,10 +51,10 @@ const AdminUserManagement = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [pageNumber, setPageNumber] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [error, setError] = useState();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [error, setError] = useState();
+  const [loading, setLoading] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
-  const [editingUser, setEditingUser] = useState(null);
 
   const handlePageChange = (_event, newPage) => {
     setPageNumber(newPage);
@@ -70,6 +66,7 @@ const AdminUserManagement = () => {
 
   const getUsers = async () => {
     try {
+      setLoading(true);
       const res = await api.get(
         `api/v1/users?page=${pageNumber}&limit=${pageSize}`,
         {
@@ -83,6 +80,8 @@ const AdminUserManagement = () => {
     } catch (error) {
       console.error("Error fetching users:", error);
       setError(error.response.data.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -132,7 +131,13 @@ const AdminUserManagement = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {users.total > 0 ? (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={7} align="center">
+                    <Loading />
+                  </TableCell>
+                </TableRow>
+              ) : users.total > 0 ? (
                 users?.data?.map((user, index) => (
                   <TableRow key={index}>
                     <TableCell>{user._id}</TableCell>
