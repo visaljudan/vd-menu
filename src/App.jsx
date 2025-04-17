@@ -22,11 +22,13 @@ import AdminBusinessList from "./pages/admin/AdminBusinessList";
 import Dashboard from "./pages/client/Dashboard";
 import TelegramManagement from "./pages/client/TelegramManagement";
 import ItemManagement from "./pages/client/ItemManagement";
+import StoreToken from "./api/StoreToken";
 
 const App = () => {
   return (
     <>
       <ToastContainer />
+      <StoreToken />
       <Router>
         <Routes>
           {/* General  */}

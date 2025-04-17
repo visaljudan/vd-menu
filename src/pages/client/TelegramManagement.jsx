@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
-  Grid, // Grid is imported but not used, consider removing if not needed later
-  Card, // Card is imported but not used directly (only StyledCard), consider removing if not needed later
-  CardContent, // CardContent is imported but not used, consider removing if not needed later
+  Card,
   Typography,
   Button,
   Table,
@@ -21,12 +19,12 @@ import {
   Snackbar,
   CircularProgress,
   IconButton,
-  Alert, // Import Alert for better Snackbar visuals
+  Alert,
 } from "@mui/material";
 import { Edit, Delete, Search } from "@mui/icons-material";
 import { styled } from "@mui/system";
 import MainLayout from "../../layouts/MainLayout";
-import api from "../../api/axiosConfig"; // Import the configured Axios instance
+import api from "../../api/axiosConfig";
 
 // Custom styled components (kept as is, though StyledCard is not used in the provided snippet)
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -41,7 +39,7 @@ const StyledCard = styled(Card)(({ theme }) => ({
 }));
 
 const TelegramManagement = () => {
-  const [users, setUsers] = useState([]); // Initialize with empty array
+  const [telegrams, setTelegrams] = useState([]); // Initialize with empty array
   const [loading, setLoading] = useState(false); // For general loading state (initial fetch, save, delete)
   const [dialogLoading, setDialogLoading] = useState(false); // Specific loading for dialog save button
   const [openDialog, setOpenDialog] = useState(false);
@@ -50,35 +48,36 @@ const TelegramManagement = () => {
   const [notification, setNotification] = useState({
     open: false,
     message: "",
-    severity: "success", // "success", "error", "warning", "info"
+    severity: "success",
   });
 
-  // Function to fetch users from the API
-  const fetchUsers = useCallback(async () => {
-    setLoading(true); // Start loading indicator for the table/page
+  // Function to fetch telegrams from the API
+  const fetchtelegrams = useCallback(async () => {
+    setLoading(true);
     try {
-      const response = await api.get("api/v1/telegrams"); // Use the imported 'api' instance
-      setUsers(response.data); // Adjust based on your actual API response structure
+      const response = await api.get("api/v1/telegrams");
+      console.log(response.data.data);
+      setTelegrams(response.data.data);
     } catch (error) {
-      console.error("Failed to fetch users:", error);
+      console.error("Failed to fetch telegrams:", error);
       setNotification({
         open: true,
-        message: `Failed to fetch users: ${error.message || 'Unknown error'}`,
+        message: `Failed to fetch telegrams: ${error.message || "Unknown error"}`,
         severity: "error",
       });
-      setUsers([]); // Clear users on error
+      setTelegrams([]); // Clear telegrams on error
     } finally {
       setLoading(false); // Stop loading indicator
     }
-  }, []); // No dependencies, fetchUsers itself doesn't change
+  }, []); // No dependencies, fetchtelegrams itself doesn't change
 
-  // Fetch users when the component mounts
+  // Fetch telegrams when the component mounts
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]); // Depend on fetchUsers
+    fetchtelegrams();
+  }, [fetchtelegrams]); // Depend on fetchtelegrams
 
   // Search/filter function (remains the same)
-  const filteredUsers = users.filter(
+  const filteredtelegrams = telegrams?.data?.filter(
     (user) =>
       user.name?.toLowerCase().includes(filter.toLowerCase()) ||
       user.username?.toLowerCase().includes(filter.toLowerCase()) ||
@@ -88,7 +87,11 @@ const TelegramManagement = () => {
   const handleOpenDialog = (user) => {
     // If user is null (adding), set currentUser to an empty object
     // Otherwise (editing), set currentUser to the user object
-    setCurrentUser(user ? { ...user } : { name: '', username: '', phoneNumber: '', status: '' });
+    setCurrentUser(
+      user
+        ? { ...user }
+        : { name: "", username: "", phoneNumber: "", status: "" }
+    );
     setOpenDialog(true);
   };
 
@@ -101,11 +104,10 @@ const TelegramManagement = () => {
   const handleDialogInputChange = (event) => {
     const { name, value } = event.target;
     setCurrentUser((prevUser) => ({
-        ...prevUser,
-        [name]: value,
+      ...prevUser,
+      [name]: value,
     }));
   };
-
 
   const handleSaveUser = async () => {
     setDialogLoading(true); // Start loading indicator in the dialog button
@@ -115,7 +117,10 @@ const TelegramManagement = () => {
       let response;
       if (isEditing) {
         // Update existing user (PUT or PATCH)
-        response = await api.put(`/v1/telegrams/${currentUser.id}`, currentUser);
+        response = await api.put(
+          `/v1/telegrams/${currentUser.id}`,
+          currentUser
+        );
       } else {
         // Add new user (POST)
         // Ensure ID is not sent if the backend generates it
@@ -131,12 +136,12 @@ const TelegramManagement = () => {
         severity: "success",
       });
       handleCloseDialog(); // Close the dialog on success
-      await fetchUsers(); // Refetch users to update the table
+      await fetchtelegrams(); // Refetch telegrams to update the table
     } catch (error) {
       console.error("Failed to save user:", error);
       setNotification({
         open: true,
-        message: `Failed to save user: ${error.response?.data?.message || error.message || 'Unknown error'}`,
+        message: `Failed to save user: ${error.response?.data?.message || error.message || "Unknown error"}`,
         severity: "error",
       });
       // Keep the dialog open on error so user can retry or fix input
@@ -158,15 +163,15 @@ const TelegramManagement = () => {
         severity: "success",
       });
       // Instead of filtering locally, refetch the data for consistency
-      await fetchUsers(); // Refetch users to update the table
+      await fetchtelegrams(); // Refetch telegrams to update the table
     } catch (error) {
       console.error("Failed to delete user:", error);
       setNotification({
         open: true,
-        message: `Failed to delete user: ${error.response?.data?.message || error.message || 'Unknown error'}`,
+        message: `Failed to delete user: ${error.response?.data?.message || error.message || "Unknown error"}`,
         severity: "error",
       });
-       // setLoading(false); // Stop loading indicator on error
+      // setLoading(false); // Stop loading indicator on error
     }
     // No finally needed if only using success/error paths
   };
@@ -177,7 +182,6 @@ const TelegramManagement = () => {
     }
     setNotification({ ...notification, open: false });
   };
-
 
   return (
     <MainLayout>
@@ -201,9 +205,16 @@ const TelegramManagement = () => {
 
         {/* User Table Area */}
         {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
-                <CircularProgress />
-            </Box>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              minHeight: "300px",
+            }}
+          >
+            <CircularProgress />
+          </Box>
         ) : (
           <TableContainer component={Paper}>
             <Table sx={{ minWidth: 650 }}>
@@ -217,9 +228,9 @@ const TelegramManagement = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {filteredUsers.length > 0 ? (
-                    filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
+                {filteredtelegrams?.length > 0 ? (
+                  filteredtelegrams.map((user) => (
+                    <TableRow key={user._id}>
                       <TableCell>{user.name}</TableCell>
                       <TableCell>{user.username}</TableCell>
                       <TableCell>{user.phoneNumber}</TableCell>
@@ -243,17 +254,16 @@ const TelegramManagement = () => {
                     </TableRow>
                   ))
                 ) : (
-                    <TableRow>
-                        <TableCell colSpan={5} align="center">
-                            No users found.
-                        </TableCell>
-                    </TableRow>
+                  <TableRow>
+                    <TableCell colSpan={5} align="center">
+                      No telegrams found.
+                    </TableCell>
+                  </TableRow>
                 )}
               </TableBody>
             </Table>
           </TableContainer>
         )}
-
 
         {/* Add New User Button */}
         <Button
@@ -266,7 +276,12 @@ const TelegramManagement = () => {
         </Button>
 
         {/* User Edit/Add Dialog */}
-        <Dialog open={openDialog} onClose={handleCloseDialog} fullWidth maxWidth="sm">
+        <Dialog
+          open={openDialog}
+          onClose={handleCloseDialog}
+          fullWidth
+          maxWidth="sm"
+        >
           <DialogTitle>
             {currentUser?.id ? "Edit User" : "Add New User"}
           </DialogTitle>
@@ -318,10 +333,18 @@ const TelegramManagement = () => {
             />
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseDialog} color="secondary" disabled={dialogLoading}>
+            <Button
+              onClick={handleCloseDialog}
+              color="secondary"
+              disabled={dialogLoading}
+            >
               Cancel
             </Button>
-            <Button onClick={handleSaveUser} color="primary" disabled={dialogLoading}>
+            <Button
+              onClick={handleSaveUser}
+              color="primary"
+              disabled={dialogLoading}
+            >
               {dialogLoading ? (
                 <CircularProgress size={24} color="inherit" />
               ) : (
@@ -336,10 +359,14 @@ const TelegramManagement = () => {
           open={notification.open}
           autoHideDuration={6000} // Increased duration slightly
           onClose={handleCloseNotification}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} // Position Snackbar
+          anchorOrigin={{ vertical: "bottom", horizontal: "right" }} // Position Snackbar
         >
           {/* Use Alert component inside Snackbar for better styling */}
-          <Alert onClose={handleCloseNotification} severity={notification.severity} sx={{ width: '100%' }}>
+          <Alert
+            onClose={handleCloseNotification}
+            severity={notification.severity}
+            sx={{ width: "100%" }}
+          >
             {notification.message}
           </Alert>
         </Snackbar>
