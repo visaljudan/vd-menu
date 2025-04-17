@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
-  Grid,
-  Card,
-  CardContent,
+  Grid, // Grid is imported but not used, consider removing if not needed later
+  Card, // Card is imported but not used directly (only StyledCard), consider removing if not needed later
+  CardContent, // CardContent is imported but not used, consider removing if not needed later
   Typography,
   Button,
   Table,
@@ -21,44 +21,14 @@ import {
   Snackbar,
   CircularProgress,
   IconButton,
+  Alert, // Import Alert for better Snackbar visuals
 } from "@mui/material";
 import { Edit, Delete, Search } from "@mui/icons-material";
 import { styled } from "@mui/system";
 import MainLayout from "../../layouts/MainLayout";
+import api from "../../api/axiosConfig"; // Import the configured Axios instance
 
-// Sample mock data for Telegram user management
-const initialData = [
-  {
-    id: 1,
-    name: "John Doe",
-    username: "@johndoe",
-    phoneNumber: "+123456789",
-    status: "Active",
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    username: "@janesmith",
-    phoneNumber: "+987654321",
-    status: "Inactive",
-  },
-  {
-    id: 3,
-    name: "Michael Scott",
-    username: "@michaelscott",
-    phoneNumber: "+112233445",
-    status: "Active",
-  },
-  {
-    id: 4,
-    name: "Dwight Schrute",
-    username: "@dwight",
-    phoneNumber: "+223344556",
-    status: "Inactive",
-  },
-];
-
-// Custom styled components
+// Custom styled components (kept as is, though StyledCard is not used in the provided snippet)
 const StyledCard = styled(Card)(({ theme }) => ({
   background: theme.palette.primary.main,
   color: theme.palette.primary.contrastText,
@@ -71,59 +41,143 @@ const StyledCard = styled(Card)(({ theme }) => ({
 }));
 
 const TelegramManagement = () => {
-  const [users, setUsers] = useState(initialData);
-  const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState([]); // Initialize with empty array
+  const [loading, setLoading] = useState(false); // For general loading state (initial fetch, save, delete)
+  const [dialogLoading, setDialogLoading] = useState(false); // Specific loading for dialog save button
   const [openDialog, setOpenDialog] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null); // Can be user object for edit, or empty object for add
   const [filter, setFilter] = useState("");
   const [notification, setNotification] = useState({
     open: false,
     message: "",
-    severity: "success",
+    severity: "success", // "success", "error", "warning", "info"
   });
 
-  // Search/filter function
+  // Function to fetch users from the API
+  const fetchUsers = useCallback(async () => {
+    setLoading(true); // Start loading indicator for the table/page
+    try {
+      const response = await api.get("api/v1/telegrams"); // Use the imported 'api' instance
+      setUsers(response.data); // Adjust based on your actual API response structure
+    } catch (error) {
+      console.error("Failed to fetch users:", error);
+      setNotification({
+        open: true,
+        message: `Failed to fetch users: ${error.message || 'Unknown error'}`,
+        severity: "error",
+      });
+      setUsers([]); // Clear users on error
+    } finally {
+      setLoading(false); // Stop loading indicator
+    }
+  }, []); // No dependencies, fetchUsers itself doesn't change
+
+  // Fetch users when the component mounts
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]); // Depend on fetchUsers
+
+  // Search/filter function (remains the same)
   const filteredUsers = users.filter(
     (user) =>
-      user.name.toLowerCase().includes(filter.toLowerCase()) ||
-      user.username.toLowerCase().includes(filter.toLowerCase()) ||
-      user.status.toLowerCase().includes(filter.toLowerCase())
+      user.name?.toLowerCase().includes(filter.toLowerCase()) ||
+      user.username?.toLowerCase().includes(filter.toLowerCase()) ||
+      user.status?.toLowerCase().includes(filter.toLowerCase())
   );
 
   const handleOpenDialog = (user) => {
-    setCurrentUser(user);
+    // If user is null (adding), set currentUser to an empty object
+    // Otherwise (editing), set currentUser to the user object
+    setCurrentUser(user ? { ...user } : { name: '', username: '', phoneNumber: '', status: '' });
     setOpenDialog(true);
   };
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
-    setCurrentUser(null);
+    setCurrentUser(null); // Reset currentUser when dialog closes
+    setDialogLoading(false); // Ensure dialog loading is reset
   };
 
-  const handleSaveUser = () => {
-    // Simulate API call to save user changes
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+  const handleDialogInputChange = (event) => {
+    const { name, value } = event.target;
+    setCurrentUser((prevUser) => ({
+        ...prevUser,
+        [name]: value,
+    }));
+  };
+
+
+  const handleSaveUser = async () => {
+    setDialogLoading(true); // Start loading indicator in the dialog button
+    const isEditing = currentUser && currentUser.id; // Check if it's an edit operation
+
+    try {
+      let response;
+      if (isEditing) {
+        // Update existing user (PUT or PATCH)
+        response = await api.put(`/v1/telegrams/${currentUser.id}`, currentUser);
+      } else {
+        // Add new user (POST)
+        // Ensure ID is not sent if the backend generates it
+        const { id, ...newUser } = currentUser;
+        response = await api.post("/v1/telegrams", newUser);
+      }
+
       setNotification({
         open: true,
-        message: currentUser
+        message: isEditing
           ? "User updated successfully!"
           : "New user added successfully!",
         severity: "success",
       });
-      setOpenDialog(false);
-    }, 1000);
+      handleCloseDialog(); // Close the dialog on success
+      await fetchUsers(); // Refetch users to update the table
+    } catch (error) {
+      console.error("Failed to save user:", error);
+      setNotification({
+        open: true,
+        message: `Failed to save user: ${error.response?.data?.message || error.message || 'Unknown error'}`,
+        severity: "error",
+      });
+      // Keep the dialog open on error so user can retry or fix input
+      setDialogLoading(false); // Stop dialog loading indicator on error
+    }
+    // No finally block needed here for setDialogLoading(false) because it's handled in success (via handleCloseDialog) and error paths.
   };
 
-  const handleDeleteUser = (id) => {
-    setUsers(users.filter((user) => user.id !== id));
-    setNotification({
-      open: true,
-      message: "User deleted successfully!",
-      severity: "success",
-    });
+  const handleDeleteUser = async (id) => {
+    // Optional: Add a confirmation dialog here before deleting
+
+    // Set loading state if you want a general page indicator during delete
+    // setLoading(true);
+    try {
+      await api.delete(`/v1/telegrams/${id}`);
+      setNotification({
+        open: true,
+        message: "User deleted successfully!",
+        severity: "success",
+      });
+      // Instead of filtering locally, refetch the data for consistency
+      await fetchUsers(); // Refetch users to update the table
+    } catch (error) {
+      console.error("Failed to delete user:", error);
+      setNotification({
+        open: true,
+        message: `Failed to delete user: ${error.response?.data?.message || error.message || 'Unknown error'}`,
+        severity: "error",
+      });
+       // setLoading(false); // Stop loading indicator on error
+    }
+    // No finally needed if only using success/error paths
   };
+
+  const handleCloseNotification = (event, reason) => {
+    if (reason === "clickaway") {
+      return;
+    }
+    setNotification({ ...notification, open: false });
+  };
+
 
   return (
     <MainLayout>
@@ -145,104 +199,130 @@ const TelegramManagement = () => {
           }}
         />
 
-        {/* User Table */}
-        <TableContainer component={Paper}>
-          <Table sx={{ minWidth: 650 }}>
-            <TableHead>
-              <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Username</TableCell>
-                <TableCell>Phone Number</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>{user.name}</TableCell>
-                  <TableCell>{user.username}</TableCell>
-                  <TableCell>{user.phoneNumber}</TableCell>
-                  <TableCell>{user.status}</TableCell>
-                  <TableCell>
-                    <IconButton
-                      onClick={() => handleOpenDialog(user)}
-                      color="primary"
-                    >
-                      <Edit />
-                    </IconButton>
-                    <IconButton
-                      onClick={() => handleDeleteUser(user.id)}
-                      color="error"
-                    >
-                      <Delete />
-                    </IconButton>
-                  </TableCell>
+        {/* User Table Area */}
+        {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
+                <CircularProgress />
+            </Box>
+        ) : (
+          <TableContainer component={Paper}>
+            <Table sx={{ minWidth: 650 }}>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Username</TableCell>
+                  <TableCell>Phone Number</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Actions</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+              <TableBody>
+                {filteredUsers.length > 0 ? (
+                    filteredUsers.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell>{user.name}</TableCell>
+                      <TableCell>{user.username}</TableCell>
+                      <TableCell>{user.phoneNumber}</TableCell>
+                      <TableCell>{user.status}</TableCell>
+                      <TableCell>
+                        <IconButton
+                          onClick={() => handleOpenDialog(user)}
+                          color="primary"
+                          aria-label="edit user"
+                        >
+                          <Edit />
+                        </IconButton>
+                        <IconButton
+                          onClick={() => handleDeleteUser(user.id)}
+                          color="error"
+                          aria-label="delete user"
+                        >
+                          <Delete />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                    <TableRow>
+                        <TableCell colSpan={5} align="center">
+                            No users found.
+                        </TableCell>
+                    </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+
 
         {/* Add New User Button */}
         <Button
           variant="contained"
           color="primary"
           sx={{ marginTop: 3 }}
-          onClick={() => handleOpenDialog(null)}
+          onClick={() => handleOpenDialog(null)} // Pass null to indicate adding a new user
         >
           Add New User
         </Button>
 
         {/* User Edit/Add Dialog */}
-        <Dialog open={openDialog} onClose={handleCloseDialog}>
+        <Dialog open={openDialog} onClose={handleCloseDialog} fullWidth maxWidth="sm">
           <DialogTitle>
-            {currentUser ? "Edit User" : "Add New User"}
+            {currentUser?.id ? "Edit User" : "Add New User"}
           </DialogTitle>
           <DialogContent>
+            {/* Use name attribute for easier state update */}
             <TextField
+              margin="dense"
               label="Name"
+              type="text"
+              fullWidth
+              variant="outlined"
+              name="name" // Add name attribute
               value={currentUser?.name || ""}
-              onChange={(e) =>
-                setCurrentUser({ ...currentUser, name: e.target.value })
-              }
-              fullWidth
+              onChange={handleDialogInputChange}
               sx={{ marginBottom: 2 }}
             />
             <TextField
+              margin="dense"
               label="Username"
+              type="text"
+              fullWidth
+              variant="outlined"
+              name="username" // Add name attribute
               value={currentUser?.username || ""}
-              onChange={(e) =>
-                setCurrentUser({ ...currentUser, username: e.target.value })
-              }
-              fullWidth
+              onChange={handleDialogInputChange}
               sx={{ marginBottom: 2 }}
             />
             <TextField
+              margin="dense"
               label="Phone Number"
-              value={currentUser?.phoneNumber || ""}
-              onChange={(e) =>
-                setCurrentUser({ ...currentUser, phoneNumber: e.target.value })
-              }
+              type="text"
               fullWidth
+              variant="outlined"
+              name="phoneNumber" // Add name attribute
+              value={currentUser?.phoneNumber || ""}
+              onChange={handleDialogInputChange}
               sx={{ marginBottom: 2 }}
             />
             <TextField
+              margin="dense"
               label="Status"
-              value={currentUser?.status || ""}
-              onChange={(e) =>
-                setCurrentUser({ ...currentUser, status: e.target.value })
-              }
+              type="text"
               fullWidth
+              variant="outlined"
+              name="status" // Add name attribute
+              value={currentUser?.status || ""}
+              onChange={handleDialogInputChange}
               sx={{ marginBottom: 2 }}
             />
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseDialog} color="secondary">
+            <Button onClick={handleCloseDialog} color="secondary" disabled={dialogLoading}>
               Cancel
             </Button>
-            <Button onClick={handleSaveUser} color="primary">
-              {loading ? (
+            <Button onClick={handleSaveUser} color="primary" disabled={dialogLoading}>
+              {dialogLoading ? (
                 <CircularProgress size={24} color="inherit" />
               ) : (
                 "Save"
@@ -254,11 +334,15 @@ const TelegramManagement = () => {
         {/* Snackbar Notification */}
         <Snackbar
           open={notification.open}
-          autoHideDuration={3000}
-          onClose={() => setNotification({ ...notification, open: false })}
-          message={notification.message}
-          severity={notification.severity}
-        />
+          autoHideDuration={6000} // Increased duration slightly
+          onClose={handleCloseNotification}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} // Position Snackbar
+        >
+          {/* Use Alert component inside Snackbar for better styling */}
+          <Alert onClose={handleCloseNotification} severity={notification.severity} sx={{ width: '100%' }}>
+            {notification.message}
+          </Alert>
+        </Snackbar>
       </Box>
     </MainLayout>
   );
