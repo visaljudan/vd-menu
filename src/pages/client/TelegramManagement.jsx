@@ -118,14 +118,14 @@ const TelegramManagement = () => {
       if (isEditing) {
         // Update existing user (PUT or PATCH)
         response = await api.put(
-          `/v1/telegrams/${currentUser.id}`,
+          `api/v1/telegrams/${currentUser.id}`,
           currentUser
         );
       } else {
         // Add new user (POST)
         // Ensure ID is not sent if the backend generates it
         const { id, ...newUser } = currentUser;
-        response = await api.post("/v1/telegrams", newUser);
+        response = await api.post("api/v1/telegrams", newUser);
       }
 
       setNotification({
@@ -156,7 +156,7 @@ const TelegramManagement = () => {
     // Set loading state if you want a general page indicator during delete
     // setLoading(true);
     try {
-      await api.delete(`/v1/telegrams/${id}`);
+      await api.delete(`api/v1/telegrams/${id}`);
       setNotification({
         open: true,
         message: "User deleted successfully!",
@@ -272,7 +272,7 @@ const TelegramManagement = () => {
           sx={{ marginTop: 3 }}
           onClick={() => handleOpenDialog(null)} // Pass null to indicate adding a new user
         >
-          Add New User
+          Add Telegram Accunte
         </Button>
 
         {/* User Edit/Add Dialog */}

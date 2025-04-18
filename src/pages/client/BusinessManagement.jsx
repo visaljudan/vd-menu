@@ -26,6 +26,7 @@ import DeleteTwoToneIcon from "@mui/icons-material/DeleteTwoTone";
 import { Helmet } from "react-helmet";
 import MainLayout from "../../layouts/MainLayout";
 import { useSelector } from "react-redux";
+import api from "../../api/axiosConfig";
 
 const ConfirmDialog = ({ message, onConfirm, onClose, open }) => (
   <Dialog open={open} onClose={onClose}>
@@ -69,53 +70,67 @@ export default function BusinessManagement() {
   const getBusinesses = async () => {
     try {
       const res = await api.get(
-        `api/v1/businesses?page=${pageNumber}&limit=${pageSize}`
+        `/api/v1/businesses?page=${pageNumber}&limit=${pageSize}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
-      const data = res.data.data;
-      setBusinesses(data);
-      setTotalItems(data.total);
+      setBusinesses(res.data.data.items || []);
+      setTotalItems(res.data.data.total || 0);
     } catch (error) {
-      console.error("Error fetching categories:", error);
+      console.error("Error fetching businesses:", error);
     }
   };
+
+  useEffect(() => {
+    getBusinesses();
+  }, [pageNumber, pageSize]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = () => {
-    if (editingBusiness) {
-      setBusinesses((prev) =>
-        prev.map((business) =>
-          business.id === editingBusiness.id
-            ? { ...business, ...form }
-            : business
-        )
-      );
-    } else {
-      setBusinesses((prev) => [
-        ...prev,
-        { ...form, id: prev.length + 1, type: "Company" },
-      ]);
+  const handleSubmit = async () => {
+    try {
+      if (editingBusiness) {
+        await api.put(`/api/v1/businesses/${editingBusiness.id}`, form, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } else {
+        await api.post("/api/v1/businesses", form, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+
+      setOpen(false);
+      setForm({
+        name: "",
+        tagline: "",
+        description: "",
+        address: "",
+        contact: "",
+        telegram: "",
+        status: "Active",
+      });
+      setEditingBusiness(null);
+      getBusinesses();
+    } catch (error) {
+      console.error("Error submitting business:", error);
     }
-    setOpen(false);
-    setForm({
-      name: "",
-      tagline: "",
-      description: "",
-      address: "",
-      contact: "",
-      status: "Active",
-    });
-    setEditingBusiness(null);
   };
 
-  const handleDelete = () => {
-    setBusinesses((prev) =>
-      prev.filter((business) => business.id !== deleteId)
-    );
-    setConfirmOpen(false);
+  const handleDelete = async () => {
+    try {
+      await api.delete(`/api/v1/businesses/${deleteId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setConfirmOpen(false);
+      setDeleteId(null);
+      getBusinesses();
+    } catch (error) {
+      console.error("Error deleting business:", error);
+    }
   };
 
   const filteredBusinesses = businesses.filter(
@@ -137,7 +152,19 @@ export default function BusinessManagement() {
           <Button
             variant="contained"
             startIcon={<Add />}
-            onClick={() => setOpen(true)}
+            onClick={() => {
+              setEditingBusiness(null);
+              setForm({
+                name: "",
+                tagline: "",
+                description: "",
+                address: "",
+                contact: "",
+                telegram: "",
+                status: "Active",
+              });
+              setOpen(true);
+            }}
           >
             Add Business
           </Button>
@@ -196,21 +223,18 @@ export default function BusinessManagement() {
                   status,
                 }) => (
                   <TableRow key={id}>
-                    {[
-                      id,
-                      name,
-                      tagline,
-                      description,
-                      address,
-                      contact,
+                    {[id, name, tagline, description, address, contact].map(
+                      (item, i) => (
+                        <TableCell key={i}>{item}</TableCell>
+                      )
+                    )}
+                    <TableCell>
                       <Chip
                         label={status}
                         color={status === "Active" ? "success" : "default"}
                         size="small"
-                      />,
-                    ].map((item, i) => (
-                      <TableCell key={i}>{item}</TableCell>
-                    ))}
+                      />
+                    </TableCell>
                     <TableCell>
                       <Tooltip title="Edit">
                         <IconButton
@@ -283,14 +307,7 @@ export default function BusinessManagement() {
             </IconButton>
           </DialogTitle>
           <DialogContent dividers>
-            {[
-              "name",
-              "tagline",
-              "description",
-              "address",
-              "contact",
-              "status",
-            ].map((field) => (
+            {["name", "tagline", "description", "address", "contact", "status"].map((field) => (
               <TextField
                 key={field}
                 label={field.charAt(0).toUpperCase() + field.slice(1)}
