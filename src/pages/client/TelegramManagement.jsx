@@ -20,6 +20,7 @@ import {
   CircularProgress,
   IconButton,
   Alert,
+  MenuItem,
 } from "@mui/material";
 import { Edit, Delete, Search } from "@mui/icons-material";
 import { styled } from "@mui/system";
@@ -37,6 +38,7 @@ const StyledCard = styled(Card)(({ theme }) => ({
     transform: "scale(1.05)",
   },
 }));
+const FORM_STATUS_OPTIONS = ["active", "inactive"];
 
 const TelegramManagement = () => {
   const [telegrams, setTelegrams] = useState([]); // Initialize with empty array
@@ -56,7 +58,6 @@ const TelegramManagement = () => {
     setLoading(true);
     try {
       const response = await api.get("api/v1/telegrams");
-      console.log(response.data.data);
       setTelegrams(response.data.data);
     } catch (error) {
       console.error("Failed to fetch telegrams:", error);
@@ -76,7 +77,6 @@ const TelegramManagement = () => {
     fetchtelegrams();
   }, [fetchtelegrams]); // Depend on fetchtelegrams
 
-  // Search/filter function (remains the same)
   const filteredtelegrams = telegrams?.data?.filter(
     (user) =>
       user.name?.toLowerCase().includes(filter.toLowerCase()) ||
@@ -85,8 +85,6 @@ const TelegramManagement = () => {
   );
 
   const handleOpenDialog = (user) => {
-    // If user is null (adding), set currentUser to an empty object
-    // Otherwise (editing), set currentUser to the user object
     setCurrentUser(
       user
         ? { ...user }
@@ -97,8 +95,8 @@ const TelegramManagement = () => {
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
-    setCurrentUser(null); // Reset currentUser when dialog closes
-    setDialogLoading(false); // Ensure dialog loading is reset
+    setCurrentUser(null);
+    setDialogLoading(false);
   };
 
   const handleDialogInputChange = (event) => {
@@ -110,20 +108,18 @@ const TelegramManagement = () => {
   };
 
   const handleSaveUser = async () => {
-    setDialogLoading(true); // Start loading indicator in the dialog button
-    const isEditing = currentUser && currentUser.id; // Check if it's an edit operation
+    setDialogLoading(true);
+    const isEditing = currentUser && currentUser._id;
 
     try {
       let response;
       if (isEditing) {
-        // Update existing user (PUT or PATCH)
-        response = await api.put(
-          `api/v1/telegrams/${currentUser.id}`,
+        response = await api.patch(
+          `api/v1/telegrams/${currentUser._id}`,
           currentUser
         );
+        console.log("response: ", response);
       } else {
-        // Add new user (POST)
-        // Ensure ID is not sent if the backend generates it
         const { id, ...newUser } = currentUser;
         response = await api.post("api/v1/telegrams", newUser);
       }
@@ -135,8 +131,8 @@ const TelegramManagement = () => {
           : "New user added successfully!",
         severity: "success",
       });
-      handleCloseDialog(); // Close the dialog on success
-      await fetchtelegrams(); // Refetch telegrams to update the table
+      handleCloseDialog();
+      await fetchtelegrams();
     } catch (error) {
       console.error("Failed to save user:", error);
       setNotification({
@@ -144,10 +140,8 @@ const TelegramManagement = () => {
         message: `Failed to save user: ${error.response?.data?.message || error.message || "Unknown error"}`,
         severity: "error",
       });
-      // Keep the dialog open on error so user can retry or fix input
       setDialogLoading(false); // Stop dialog loading indicator on error
     }
-    // No finally block needed here for setDialogLoading(false) because it's handled in success (via handleCloseDialog) and error paths.
   };
 
   const handleDeleteUser = async (id) => {
@@ -229,22 +223,22 @@ const TelegramManagement = () => {
               </TableHead>
               <TableBody>
                 {filteredtelegrams?.length > 0 ? (
-                  filteredtelegrams.map((user) => (
-                    <TableRow key={user._id}>
-                      <TableCell>{user.name}</TableCell>
-                      <TableCell>{user.username}</TableCell>
-                      <TableCell>{user.phoneNumber}</TableCell>
-                      <TableCell>{user.status}</TableCell>
+                  filteredtelegrams.map((telegram) => (
+                    <TableRow key={telegram._id}>
+                      <TableCell>{telegram.name}</TableCell>
+                      <TableCell>{telegram.username}</TableCell>
+                      <TableCell>{telegram.phoneNumber}</TableCell>
+                      <TableCell>{telegram.status}</TableCell>
                       <TableCell>
                         <IconButton
-                          onClick={() => handleOpenDialog(user)}
+                          onClick={() => handleOpenDialog(telegram)}
                           color="primary"
                           aria-label="edit user"
                         >
                           <Edit />
                         </IconButton>
                         <IconButton
-                          onClick={() => handleDeleteUser(user.id)}
+                          onClick={() => handleDeleteUser(telegram._id)}
                           color="error"
                           aria-label="delete user"
                         >
@@ -320,17 +314,23 @@ const TelegramManagement = () => {
               onChange={handleDialogInputChange}
               sx={{ marginBottom: 2 }}
             />
+
             <TextField
-              margin="dense"
+              select
               label="Status"
-              type="text"
+              name="status"
               fullWidth
-              variant="outlined"
-              name="status" // Add name attribute
               value={currentUser?.status || ""}
               onChange={handleDialogInputChange}
-              sx={{ marginBottom: 2 }}
-            />
+              sx={{ mb: 2 }}
+              size="small"
+            >
+              {FORM_STATUS_OPTIONS.map((opt) => (
+                <MenuItem key={opt} value={opt}>
+                  {opt}
+                </MenuItem>
+              ))}
+            </TextField>
           </DialogContent>
           <DialogActions>
             <Button

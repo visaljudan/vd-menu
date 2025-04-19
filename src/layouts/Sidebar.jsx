@@ -18,12 +18,14 @@ import {
   Subscriptions,
 } from "@mui/icons-material";
 import { Link, useLocation } from "react-router-dom";
+import { useSelector } from "react-redux";
 
 // Simulating user role (You should get this from auth context or state)
 const userRole = "user"; // Change this to "admin" or "user" based on login session
 
 const Sidebar = () => {
   const location = useLocation();
+ 
 
   const menuItems = [
     { text: "Dashboard", icon: <Dashboard />, path: "/" },

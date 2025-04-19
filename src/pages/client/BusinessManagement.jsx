@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import { useSelector } from "react-redux";
 import {
@@ -27,15 +26,24 @@ import {
 import { Edit, Add, Close } from "@mui/icons-material";
 import DeleteTwoToneIcon from "@mui/icons-material/DeleteTwoTone";
 import { Helmet } from "react-helmet";
-import MainLayout from "../../layouts/MainLayout"; // Adjust path as needed
-import api from "../../api/axiosConfig"; // Adjust path as needed
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { storage } from "../../firebase";
+import MainLayout from "../../layouts/MainLayout";
+import api from "../../api/axiosConfig";
 
 // --- Constants ---
 const COMPONENT_TITLE = "Business Management";
 const API_ENDPOINT = "/api/v1/businesses";
-const STATUS_OPTIONS = ["All", "Active", "Inactive"];
-const FORM_STATUS_OPTIONS = ["Active", "Inactive"];
-const TABLE_HEADERS = ["ID", "Name", "Description", "Location", "Status", "Actions"];
+const STATUS_OPTIONS = ["All", "active", "inactive"];
+const FORM_STATUS_OPTIONS = ["active", "inactive"];
+const TABLE_HEADERS = [
+  "ID",
+  "Name",
+  "Description",
+  "Location",
+  "Status",
+  "Actions",
+];
 const ROWS_PER_PAGE_OPTIONS = [5, 10, 20, 50];
 const INITIAL_FORM_STATE = {
   telegramId: "",
@@ -44,7 +52,7 @@ const INITIAL_FORM_STATE = {
   location: "",
   logo: null,
   image: null,
-  status: "Active", // Default status for new entries
+  status: "active",
 };
 
 // --- Helper Components ---
@@ -64,7 +72,9 @@ const ConfirmDialog = ({ message, onConfirm, onClose, open, isLoading }) => (
         color="error"
         onClick={onConfirm}
         disabled={isLoading}
-        startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : null}
+        startIcon={
+          isLoading ? <CircularProgress size={20} color="inherit" /> : null
+        }
       >
         {isLoading ? "Deleting..." : "Confirm"}
       </Button>
@@ -72,13 +82,18 @@ const ConfirmDialog = ({ message, onConfirm, onClose, open, isLoading }) => (
   </Dialog>
 );
 
-// --- Main Component ---
-
 export default function BusinessManagement() {
-  // --- State ---
   const { currentUser } = useSelector((state) => state.user);
   const token = currentUser?.token;
 
+  const [telegrams, setTelegrams] = useState([]);
+  const [errors, setErrors] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [notification, setNotification] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
   const [businesses, setBusinesses] = useState([]);
   const [totalItems, setTotalItems] = useState(0);
   const [pageNumber, setPageNumber] = useState(1);
@@ -98,38 +113,30 @@ export default function BusinessManagement() {
   const [error, setError] = useState(null);
   const [formError, setFormError] = useState(null);
 
-  // --- API Interaction ---
-
-  const fetchBusinesses = useCallback(async (showLoading = true) => {
-    if (!token) {
-        setError("Authentication token not found.");
-        setBusinesses([]);
-        setTotalItems(0);
-        return;
-    }
-    if (showLoading) setIsLoading(true);
+  const fetchBusinesses = useCallback(async () => {
+    setLoading(true);
     setError(null);
-
     const params = new URLSearchParams({
       page: pageNumber,
       limit: pageSize,
     });
-    if (searchQuery) params.append('search', searchQuery);
-    if (filters.status !== 'All') params.append('status', filters.status);
+    if (searchQuery) params.append("search", searchQuery);
+    if (filters.status !== "All") params.append("status", filters.status);
 
     try {
-      const res = await api.get(`${API_ENDPOINT}?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setBusinesses(res.data?.data?.items || []);
-      setTotalItems(res.data?.data?.total || 0);
+      const response = await api.get("api/v1/businesses");
+      console.log(response.data.data);
+      setBusinesses(response.data.data.data || []);
+      setTotalItems(response.data.data.total || 0);
     } catch (err) {
       console.error("Error fetching businesses:", err);
-      setError(`Failed to fetch businesses: ${err.response?.data?.message || err.message || 'Please try again.'}`);
+      setError(
+        `Failed to fetch businesses: ${err.response?.data?.message || err.message || "Please try again."}`
+      );
       setBusinesses([]);
       setTotalItems(0);
     } finally {
-      if (showLoading) setIsLoading(false);
+      setLoading(false);
     }
   }, [token, pageNumber, pageSize, searchQuery, filters.status]);
 
@@ -182,13 +189,13 @@ export default function BusinessManagement() {
     resetForm();
     setEditingBusiness(business);
     setFormState({
-        telegramId: business.telegramId ?? "",
-        name: business.name ?? "",
-        description: business.description ?? "",
-        location: business.location ?? "",
-        status: business.status ?? "Active",
-        logo: null, // Files cannot be pre-populated
-        image: null,
+      telegramId: business.telegramId ?? "",
+      name: business.name ?? "",
+      description: business.description ?? "",
+      location: business.location ?? "",
+      status: business.status ?? "Active",
+      logo: null, // Files cannot be pre-populated
+      image: null,
     });
     setAddEditDialogOpen(true);
   };
@@ -199,10 +206,6 @@ export default function BusinessManagement() {
   };
 
   const handleSubmit = async () => {
-    if (!token) {
-        setFormError("Authentication token not found.");
-        return;
-    }
     setIsSubmitting(true);
     setFormError(null);
 
@@ -213,25 +216,25 @@ export default function BusinessManagement() {
       }
     });
 
-    const url = editingBusiness ? `${API_ENDPOINT}/${editingBusiness.id}` : API_ENDPOINT;
+    console.log("formData: ", formState);
+
+    const url = editingBusiness
+      ? `${API_ENDPOINT}/${editingBusiness._id}`
+      : API_ENDPOINT;
     const method = editingBusiness ? "put" : "post";
 
     try {
-      await api({
-        method: method,
-        url: url,
-        data: formData,
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      const response = await api.post("api/v1/businesses", formState);
+      console.log("response: ", response);
       handleCloseAddEditDialog();
       fetchBusinesses(false);
     } catch (err) {
-      console.error(`Error ${editingBusiness ? "updating" : "adding"} business:`, err);
+      console.error(
+        `Error ${editingBusiness ? "updating" : "adding"} business:`,
+        err
+      );
       setFormError(
-        `Failed to ${editingBusiness ? "update" : "add"} business. ${err.response?.data?.message || err.message || 'Please check details and try again.'}`
+        `Failed to ${editingBusiness ? "update" : "add"} business. ${err.response?.data?.message || err.message || "Please check details and try again."}`
       );
     } finally {
       setIsSubmitting(false);
@@ -249,32 +252,154 @@ export default function BusinessManagement() {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!businessToDeleteId || !token) {
-        setError("Deletion failed: Missing ID or token.");
-        handleCloseConfirmDeleteDialog();
-        return;
-    }
     setIsDeleting(true);
     setError(null);
 
     try {
-      await api.delete(`${API_ENDPOINT}/${businessToDeleteId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await api.delete(
+        `api/v1/businesses/${businessToDeleteId}`
+      );
+      console.log(response);
       setBusinessToDeleteId(null);
       handleCloseConfirmDeleteDialog();
       fetchBusinesses(false);
     } catch (err) {
       console.error("Error deleting business:", err);
-      setError(`Failed to delete business: ${err.response?.data?.message || err.message || 'Please try again.'}`);
+      setError(
+        `Failed to delete business: ${err.response?.data?.message || err.message || "Please try again."}`
+      );
       handleCloseConfirmDeleteDialog();
     } finally {
       setIsDeleting(false);
     }
   };
 
+  // Fetch Telegrams
+  const fetchtelegrams = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await api.get("api/v1/telegrams");
+      setTelegrams(response.data.data);
+    } catch (error) {
+      console.error("Failed to fetch telegrams:", error);
+      setNotification({
+        open: true,
+        message: `Failed to fetch telegrams: ${error.message || "Unknown error"}`,
+        severity: "error",
+      });
+      setTelegrams([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchtelegrams();
+  }, [fetchtelegrams]);
+
   // --- Render Logic ---
   const businessesToDisplay = businesses;
+
+  // Upload image
+  const uploadImage = async (file) => {
+    try {
+      if (!file) throw new Error("No file selected");
+      const storageRef = ref(storage, `vd-menu/${file.name}`);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+      await new Promise((resolve, reject) => {
+        uploadTask.on(
+          "state_changed",
+          (snapshot) => {
+            const progress =
+              (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            // setProgressPercentage(progress);
+          },
+          (error) => reject(error),
+          () => resolve()
+        );
+      });
+      const downloadURL = await getDownloadURL(storageRef);
+      console.log("File available at", downloadURL);
+      return downloadURL;
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      throw error;
+    }
+  };
+
+  const handleLogoChange = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        setErrors({
+          ...errors,
+          avatar: "File size must be under 2MB.",
+        });
+        return;
+      }
+
+      const img = new Image();
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        img.onload = function () {
+          if (img.width >= 1000) {
+            setErrors({
+              ...errors,
+              avatar: "Image dimensions must be 1000x1000 pixels or smaller.",
+            });
+            return;
+          }
+
+          uploadImage(file)
+            .then((imageUrl) => {
+              setFormState({ ...formState, logo: imageUrl });
+            })
+            .catch((error) => {
+              console.error("Image upload failed:", error);
+            });
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        setErrors({
+          ...errors,
+          avatar: "File size must be under 2MB.",
+        });
+        return;
+      }
+
+      const img = new Image();
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        img.onload = function () {
+          if (img.width >= 1000) {
+            setErrors({
+              ...errors,
+              avatar: "Image dimensions must be 1000x1000 pixels or smaller.",
+            });
+            return;
+          }
+
+          uploadImage(file)
+            .then((imageUrl) => {
+              setFormState({ ...formState, image: imageUrl });
+            })
+            .catch((error) => {
+              console.error("Image upload failed:", error);
+            });
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   return (
     <MainLayout>
@@ -313,7 +438,7 @@ export default function BusinessManagement() {
             placeholder="Search by name..."
             value={searchQuery}
             onChange={handleSearchChange}
-            sx={{ flexGrow: 1, minWidth: '200px' }}
+            sx={{ flexGrow: 1, minWidth: "200px" }}
             disabled={isLoading}
             variant="outlined"
             size="small"
@@ -338,61 +463,112 @@ export default function BusinessManagement() {
 
         {/* --- Display General Errors --- */}
         {error && (
-            <Typography color="error" sx={{ mb: 2 }} role="alert">
-                {error}
-            </Typography>
+          <Typography color="error" sx={{ mb: 2 }} role="alert">
+            {error}
+          </Typography>
         )}
 
         {/* --- Table --- */}
-        <Paper elevation={2} sx={{ overflow: 'hidden' }}>
+        <Paper elevation={2} sx={{ overflow: "hidden" }}>
           <TableContainer>
             <Table stickyHeader aria-label="businesses table">
               <TableHead sx={{ backgroundColor: "action.hover" }}>
                 <TableRow>
                   {TABLE_HEADERS.map((head) => (
-                    <TableCell key={head} sx={{ fontWeight: 'bold' }}>{head}</TableCell>
+                    <TableCell key={head} sx={{ fontWeight: "bold" }}>
+                      {head}
+                    </TableCell>
                   ))}
                 </TableRow>
               </TableHead>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={TABLE_HEADERS.length} align="center" sx={{ py: 4 }}>
+                    <TableCell
+                      colSpan={TABLE_HEADERS.length}
+                      align="center"
+                      sx={{ py: 4 }}
+                    >
                       <CircularProgress />
-                      <Typography sx={{ mt: 1 }}>Loading Businesses...</Typography>
+                      <Typography sx={{ mt: 1 }}>
+                        Loading Businesses...
+                      </Typography>
                     </TableCell>
                   </TableRow>
                 ) : businessesToDisplay.length === 0 ? (
-                    <TableRow>
-                        <TableCell colSpan={TABLE_HEADERS.length} align="center" sx={{ py: 4 }}>
-                            <Typography>
-                                {searchQuery || filters.status !== 'All'
-                                    ? "No businesses match your criteria."
-                                    : "No businesses found. Add one to get started!"
-                                }
-                            </Typography>
-                        </TableCell>
-                    </TableRow>
+                  <TableRow>
+                    <TableCell
+                      colSpan={TABLE_HEADERS.length}
+                      align="center"
+                      sx={{ py: 4 }}
+                    >
+                      <Typography>
+                        {searchQuery || filters.status !== "All"
+                          ? "No businesses match your criteria."
+                          : "No businesses found. Add one to get started!"}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   businessesToDisplay.map((business) => (
-                    <TableRow hover key={business.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                      <TableCell component="th" scope="row">{business.id}</TableCell>
-                      <TableCell>{business.name}</TableCell>
-                      <TableCell>
-                          <Typography noWrap title={business.description}>
-                              {business.description}
-                          </Typography>
+                    <TableRow
+                      hover
+                      key={business._id}
+                      sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
+                    >
+                      <TableCell component="th" scope="row">
+                        {business._id}
                       </TableCell>
-                      <TableCell>{business.location}</TableCell>
+                      <TableCell
+                        sx={{
+                          width: 500,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {business.name}
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {business.description}
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {business.l}
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {business.location}
+                      </TableCell>
                       <TableCell>
                         <Chip
                           label={business.status}
-                          color={business.status === "Active" ? "success" : "default"}
+                          color={
+                            business.status === "active" ? "success" : "default"
+                          }
                           size="small"
-                          variant="outlined"
+                          // variant="outlined"
                         />
                       </TableCell>
-                      <TableCell align="right">
+                      <TableCell
+                        align="center"
+                        sx={{
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          height: "100%",
+                        }}
+                      >
                         <Tooltip title="Edit">
                           <span>
                             <IconButton
@@ -406,10 +582,12 @@ export default function BusinessManagement() {
                           </span>
                         </Tooltip>
                         <Tooltip title="Delete">
-                           <span>
+                          <span>
                             <IconButton
                               color="error"
-                              onClick={() => handleOpenConfirmDeleteDialog(business.id)}
+                              onClick={() =>
+                                handleOpenConfirmDeleteDialog(business._id)
+                              }
                               size="small"
                               disabled={isSubmitting || isDeleting}
                             >
@@ -425,19 +603,19 @@ export default function BusinessManagement() {
             </Table>
           </TableContainer>
 
-         {totalItems > 0 && (
-             <TablePagination
-               component="div"
-               count={totalItems}
-               page={pageNumber - 1}
-               onPageChange={handlePageChange}
-               rowsPerPage={pageSize}
-               onRowsPerPageChange={handleRowsPerPageChange}
-               rowsPerPageOptions={ROWS_PER_PAGE_OPTIONS}
-               showFirstButton
-               showLastButton
-             />
-           )}
+          {totalItems > 0 && (
+            <TablePagination
+              component="div"
+              count={totalItems}
+              page={pageNumber - 1}
+              onPageChange={handlePageChange}
+              rowsPerPage={pageSize}
+              onRowsPerPageChange={handleRowsPerPageChange}
+              rowsPerPageOptions={ROWS_PER_PAGE_OPTIONS}
+              showFirstButton
+              showLastButton
+            />
+          )}
         </Paper>
       </Box>
 
@@ -449,18 +627,28 @@ export default function BusinessManagement() {
         maxWidth="sm"
         disableEscapeKeyDown={isSubmitting}
       >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <DialogTitle
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
           {editingBusiness ? "Edit Business" : "Add New Business"}
-          <IconButton onClick={handleCloseAddEditDialog} edge="end" disabled={isSubmitting}>
+          <IconButton
+            onClick={handleCloseAddEditDialog}
+            edge="end"
+            disabled={isSubmitting}
+          >
             <Close />
           </IconButton>
         </DialogTitle>
         <DialogContent dividers>
-         {formError && (
+          {formError && (
             <Typography color="error" sx={{ mb: 2 }} role="alert">
-                {formError}
+              {formError}
             </Typography>
-         )}
+          )}
           <TextField
             select
             label="Telegram ID"
@@ -468,10 +656,18 @@ export default function BusinessManagement() {
             value={formState.telegramId}
             onChange={handleFormInputChange}
             fullWidth
+            required
             sx={{ mb: 2 }}
             disabled={isSubmitting}
             size="small"
-          />
+          >
+            {telegrams?.data?.map((telegram, index) => (
+              <MenuItem key={telegram._id} value={telegram._id}>
+                {telegram.name}
+              </MenuItem>
+            ))}
+          </TextField>
+
           <TextField
             label="Name"
             name="name"
@@ -505,40 +701,74 @@ export default function BusinessManagement() {
             disabled={isSubmitting}
             size="small"
           />
+          {/* <TextField
+            label="logo"
+            name="logo"
+            value={formState.logo}
+            onChange={handleFormInputChange}
+            fullWidth
+            multiline
+            rows={3}
+            sx={{ mb: 2 }}
+            disabled={isSubmitting}
+            size="small"
+          />
+          <TextField
+            label="image"
+            name="image"
+            value={formState.image}
+            onChange={handleFormInputChange}
+            fullWidth
+            multiline
+            rows={3}
+            sx={{ mb: 2 }}
+            disabled={isSubmitting}
+            size="small"
+          /> */}
 
           {/* === FIELD ORDER CHANGE: Logo and Image moved here === */}
           <Box sx={{ mb: 2 }}>
-             <Typography variant="subtitle2" gutterBottom component="label" htmlFor="logo-upload">
-                 Logo
-             </Typography>
-             <TextField
-                 id="logo-upload"
-                 type="file"
-                 name="logo"
-                 accept="image/*"
-                 onChange={handleFormInputChange}
-                 fullWidth
-                 disabled={isSubmitting}
-                 size="small"
-                 sx={{ mt: 0.5 }}
-             />
+            <Typography
+              variant="subtitle2"
+              gutterBottom
+              component="label"
+              htmlFor="logo-upload"
+            >
+              Logo
+            </Typography>
+            <TextField
+              id="logo-upload"
+              type="file"
+              name="logo"
+              accept="image/*"
+              onChange={handleLogoChange}
+              fullWidth
+              disabled={isSubmitting}
+              size="small"
+              sx={{ mt: 0.5 }}
+            />
           </Box>
 
           <Box sx={{ mb: 2 }}>
-             <Typography variant="subtitle2" gutterBottom component="label" htmlFor="image-upload">
-                 Image
-             </Typography>
-             <TextField
-                 id="image-upload"
-                 type="file"
-                 name="image"
-                 accept="image/*"
-                 onChange={handleFormInputChange}
-                 fullWidth
-                 disabled={isSubmitting}
-                 size="small"
-                 sx={{ mt: 0.5 }}
-             />
+            <Typography
+              variant="subtitle2"
+              gutterBottom
+              component="label"
+              htmlFor="image-upload"
+            >
+              Image
+            </Typography>
+            <TextField
+              id="image-upload"
+              type="file"
+              name="image"
+              accept="image/*"
+              onChange={handleImageChange}
+              fullWidth
+              disabled={isSubmitting}
+              size="small"
+              sx={{ mt: 0.5 }}
+            />
           </Box>
           {/* === END FIELD ORDER CHANGE === */}
 
@@ -560,19 +790,26 @@ export default function BusinessManagement() {
               </MenuItem>
             ))}
           </TextField>
-
         </DialogContent>
-        <DialogActions sx={{ p: '16px 24px' }}>
-          <Button onClick={handleCloseAddEditDialog} color="inherit" disabled={isSubmitting}>
+        <DialogActions sx={{ p: "16px 24px" }}>
+          <Button
+            onClick={handleCloseAddEditDialog}
+            color="inherit"
+            disabled={isSubmitting}
+          >
             Cancel
           </Button>
           <Button
             variant="contained"
             onClick={handleSubmit}
             disabled={isSubmitting}
-            startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : null}
+            startIcon={
+              isSubmitting ? (
+                <CircularProgress size={20} color="inherit" />
+              ) : null
+            }
           >
-            {isSubmitting ? "Saving..." : (editingBusiness ? "Update" : "Save")}
+            {isSubmitting ? "Saving..." : editingBusiness ? "Update" : "Save"}
           </Button>
         </DialogActions>
       </Dialog>

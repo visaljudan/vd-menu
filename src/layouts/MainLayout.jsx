@@ -4,7 +4,6 @@ import DashboardIcon from "@mui/icons-material/Dashboard";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import DescriptionIcon from "@mui/icons-material/Description";
-import LayersIcon from "@mui/icons-material/Layers";
 import { AppProvider } from "@toolpad/core/AppProvider";
 import { DashboardLayout } from "@toolpad/core/DashboardLayout";
 import { PageContainer } from "@toolpad/core/PageContainer";
@@ -191,6 +190,7 @@ const MainLayout = ({ children }) => {
   return (
     <AppProvider theme={demoTheme}>
       <DashboardLayout navigation={filteredNavigation}>
+        <div>{user.name}</div>
         <PageContainer>
           <Header title={headerTitle} />
           <div className="p-4">{children}</div>
