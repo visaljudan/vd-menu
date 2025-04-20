@@ -30,7 +30,7 @@ import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { storage } from "../../firebase";
 import MainLayout from "../../layouts/MainLayout";
 import api from "../../api/axiosConfig";
-import BusinessCard from "./BusinessCard";
+import BusinessCard from "../../components/BusinessCard";
 
 // --- Constants ---
 const COMPONENT_TITLE = "Business Management";
@@ -126,7 +126,6 @@ export default function BusinessManagement() {
 
     try {
       const response = await api.get("api/v1/businesses");
-      console.log(response.data.data);
       setBusinesses(response.data.data.data || []);
       setTotalItems(response.data.data.total || 0);
     } catch (err) {
@@ -149,20 +148,6 @@ export default function BusinessManagement() {
 
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
-    setPageNumber(1);
-  };
-
-  const handleFilterChange = (event) => {
-    setFilters((prev) => ({ ...prev, status: event.target.value }));
-    setPageNumber(1);
-  };
-
-  const handlePageChange = (_, newPage) => {
-    setPageNumber(newPage + 1);
-  };
-
-  const handleRowsPerPageChange = (event) => {
-    setPageSize(parseInt(event.target.value, 10));
     setPageNumber(1);
   };
 
@@ -190,13 +175,13 @@ export default function BusinessManagement() {
     resetForm();
     setEditingBusiness(business);
     setFormState({
-      telegramId: business.telegramId ?? "",
+      telegramId: business.telegramId._id ?? "",
       name: business.name ?? "",
       description: business.description ?? "",
       location: business.location ?? "",
       status: business.status ?? "Active",
-      logo: null, // Files cannot be pre-populated
-      image: null,
+      logo: business.logo,
+      image: business.image,
     });
     setAddEditDialogOpen(true);
   };
@@ -211,22 +196,25 @@ export default function BusinessManagement() {
     setFormError(null);
 
     const formData = new FormData();
+
     Object.entries(formState).forEach(([key, value]) => {
-      if (value !== null && value !== undefined) {
+      if (
+        value !== null &&
+        value !== undefined &&
+        !(typeof value === "string" && (key === "logo" || key === "image"))
+      ) {
         formData.append(key, value);
       }
     });
 
-    console.log("formData: ", formState);
-
-    const url = editingBusiness
-      ? `${API_ENDPOINT}/${editingBusiness._id}`
-      : API_ENDPOINT;
-    const method = editingBusiness ? "put" : "post";
-
+    console.log("formState: ", formState);
     try {
-      const response = await api.post("api/v1/businesses", formState);
-      console.log("response: ", response);
+      if (editingBusiness) {
+        await api.patch(`api/v1/businesses/${editingBusiness._id}`, formState);
+      } else {
+        await api.post("api/v1/businesses", formState);
+      }
+
       handleCloseAddEditDialog();
       fetchBusinesses(false);
     } catch (err) {
@@ -235,7 +223,11 @@ export default function BusinessManagement() {
         err
       );
       setFormError(
-        `Failed to ${editingBusiness ? "update" : "add"} business. ${err.response?.data?.message || err.message || "Please check details and try again."}`
+        `Failed to ${editingBusiness ? "update" : "add"} business. ${
+          err.response?.data?.message ||
+          err.message ||
+          "Please check details and try again."
+        }`
       );
     } finally {
       setIsSubmitting(false);
@@ -260,7 +252,6 @@ export default function BusinessManagement() {
       const response = await api.delete(
         `api/v1/businesses/${businessToDeleteId}`
       );
-      console.log(response);
       setBusinessToDeleteId(null);
       handleCloseConfirmDeleteDialog();
       fetchBusinesses(false);
@@ -402,22 +393,21 @@ export default function BusinessManagement() {
     }
   };
 
-    useEffect(() => {
-      const fetchBusinesses = async () => {
-        try {
-          const response = await axios.get('/api/v1/businesses');
-          setBusinesses(response.data); // change if your API structure is different
-        } catch (error) {
-          console.error('Failed to fetch businesses:', error);
-        } finally {
-          setLoading(false);
-        }
-      };
-  
-      fetchBusinesses();
-    }, []);
+  // useEffect(() => {
+  //   const fetchBusinesses = async () => {
+  //     try {
+  //       const response = await api.get("/api/v1/businesses");
+  //       setBusinesses(response.data.data);
+  //     } catch (error) {
+  //       console.error("Failed to fetch businesses:", error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
-    
+  //   fetchBusinesses();
+  // }, []);
+
   return (
     <MainLayout>
       <Helmet>
@@ -448,8 +438,6 @@ export default function BusinessManagement() {
             Add Business
           </Button>
         </Box>
-
-        {/* --- Filters/Search ---
         <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
           <TextField
             placeholder="Search by name..."
@@ -460,49 +448,44 @@ export default function BusinessManagement() {
             variant="outlined"
             size="small"
           />
-          <TextField
-            select
-            label="Status"
-            value={filters.status}
-            onChange={handleFilterChange}
-            sx={{ width: 150 }}
-            disabled={isLoading}
-            variant="outlined"
-            size="small"
-          >
-            {STATUS_OPTIONS.map((opt) => (
-              <MenuItem key={opt} value={opt}>
-                {opt}
-              </MenuItem>
-            ))}
-          </TextField>
-        </Box> */}
-
+        </Box>
         {/* --- Display General Errors --- */}
         {error && (
           <Typography color="error" sx={{ mb: 2 }} role="alert">
             {error}
           </Typography>
         )}
-          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-            {businesses.map((item) => (
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+          {totalItems === 0 ? (
+            <Typography color="error" sx={{ mb: 2 }} role="alert">
+              Don't have data yet
+            </Typography>
+          ) : totalItems > 0 ? (
+            businesses.map((item) => (
               <BusinessCard
                 key={item._id}
                 id={item._id}
-                name={item.userId?.name || 'No name'}
-                description={item.description || 'No description'}
-                location={item.location || 'Unknown'}
-                photo={item.image || 'https://via.placeholder.com/300'}
-                logo={item.logo || 'https://via.placeholder.com/100'}
-                companyName={item.name || 'Company'}
-                onEdit={(id) => {
-                  const businessToEdit = businesses.find(b => b._id === id);
+                name={item.userId?.name || "No name"}
+                description={item.description || "No description"}
+                location={item.location || "Unknown"}
+                photo={item.image || "https://via.placeholder.com/300"}
+                logo={item.logo || "https://via.placeholder.com/100"}
+                companyName={item.name || "Company"}
+                onEdit={() => {
+                  const businessToEdit = businesses.find(
+                    (b) => b._id === item._id
+                  );
                   if (businessToEdit) handleOpenEditDialog(businessToEdit);
                 }}
-                onDelete={(id) => handleOpenConfirmDeleteDialog(id)}
+                onDelete={() => handleOpenConfirmDeleteDialog(item._id)}
               />
-            ))}
-          </Box>
+            ))
+          ) : (
+            <Typography color="error" sx={{ mb: 2 }} role="alert">
+              Loading...
+            </Typography>
+          )}
+        </Box>
       </Box>
 
       {/* --- Add/Edit Dialog --- */}
@@ -587,43 +570,17 @@ export default function BusinessManagement() {
             disabled={isSubmitting}
             size="small"
           />
-          {/* <TextField
-            label="logo"
-            name="logo"
-            value={formState.logo}
-            onChange={handleFormInputChange}
-            fullWidth
-            multiline
-            rows={3}
-            sx={{ mb: 2 }}
-            disabled={isSubmitting}
-            size="small"
-          />
-          <TextField
-            label="image"
-            name="image"
-            value={formState.image}
-            onChange={handleFormInputChange}
-            fullWidth
-            multiline
-            rows={3}
-            sx={{ mb: 2 }}
-            disabled={isSubmitting}
-            size="small"
-          /> */}
-
-          {/* === FIELD ORDER CHANGE: Logo and Image moved here === */}
           <Box sx={{ mb: 2 }}>
             <Typography
               variant="subtitle2"
               gutterBottom
               component="label"
-              htmlFor="logo-upload"
+              htmlFor="logo"
             >
               Logo
             </Typography>
             <TextField
-              id="logo-upload"
+              id="logo"
               type="file"
               name="logo"
               accept="image/*"
@@ -633,6 +590,15 @@ export default function BusinessManagement() {
               size="small"
               sx={{ mt: 0.5 }}
             />
+            {formState?.logo && (
+              <Box mt={1}>
+                <img
+                  src={formState.logo}
+                  alt="Logo Preview"
+                  style={{ maxHeight: 100, borderRadius: 4 }}
+                />
+              </Box>
+            )}
           </Box>
 
           <Box sx={{ mb: 2 }}>
@@ -640,12 +606,12 @@ export default function BusinessManagement() {
               variant="subtitle2"
               gutterBottom
               component="label"
-              htmlFor="image-upload"
+              htmlFor="image"
             >
               Image
             </Typography>
             <TextField
-              id="image-upload"
+              id="image"
               type="file"
               name="image"
               accept="image/*"
@@ -655,8 +621,16 @@ export default function BusinessManagement() {
               size="small"
               sx={{ mt: 0.5 }}
             />
+            {formState?.image && (
+              <Box mt={1}>
+                <img
+                  src={formState.image}
+                  alt="Image Preview"
+                  style={{ maxHeight: 100, borderRadius: 4 }}
+                />
+              </Box>
+            )}
           </Box>
-          {/* === END FIELD ORDER CHANGE === */}
 
           <TextField
             select

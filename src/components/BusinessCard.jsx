@@ -1,6 +1,6 @@
-import React from 'react';
-import { Paper, Box, Typography, IconButton, Tooltip } from '@mui/material';
-import { Edit, DeleteTwoTone } from '@mui/icons-material';
+import React from "react";
+import { Paper, Box, Typography, IconButton, Tooltip } from "@mui/material";
+import { Edit, DeleteTwoTone } from "@mui/icons-material";
 
 const BusinessCard = ({
   id,
@@ -19,38 +19,38 @@ const BusinessCard = ({
       sx={{
         width: 300,
         borderRadius: 2,
-        overflow: 'hidden',
-        position: 'relative',
-        '&:hover .card-actions': {
+        overflow: "hidden",
+        position: "relative",
+        "&:hover .card-actions": {
           opacity: 1,
-        }
+        },
       }}
     >
-      <Box 
+      <Box
         className="card-actions"
         sx={{
-          position: 'absolute',
+          position: "absolute",
           top: 8,
           right: 8,
           zIndex: 1,
           opacity: 0,
-          transition: 'opacity 0.2s ease',
+          transition: "opacity 0.2s ease",
         }}
       >
         <Tooltip title="Edit">
-          <IconButton 
-            onClick={() => onEdit(id)} 
+          <IconButton
+            onClick={() => onEdit(id)}
             size="small"
-            sx={{ backgroundColor: 'rgba(255,255,255,0.8)', mr: 1 }}
+            sx={{ backgroundColor: "rgba(255,255,255,0.8)", mr: 1 }}
           >
             <Edit fontSize="small" />
           </IconButton>
         </Tooltip>
         <Tooltip title="Delete">
-          <IconButton 
-            onClick={() => onDelete(id)} 
+          <IconButton
+            onClick={() => onDelete(id)}
             size="small"
-            sx={{ backgroundColor: 'rgba(255,255,255,0.8)' }}
+            sx={{ backgroundColor: "rgba(255,255,255,0.8)" }}
             color="error"
           >
             <DeleteTwoTone fontSize="small" />
@@ -59,36 +59,36 @@ const BusinessCard = ({
       </Box>
 
       {/* Rest of your card content */}
-      <Box sx={{ position: 'relative', height: 150 }}>
+      <Box sx={{ position: "relative", height: 150 }}>
         <img
           src={photo}
           alt="Business"
           style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
           }}
         />
         <Box
           sx={{
-            position: 'absolute',
+            position: "absolute",
             bottom: -24,
             left: 16,
             width: 48,
             height: 48,
-            borderRadius: '50%',
-            border: '3px solid white',
-            overflow: 'hidden',
-            backgroundColor: 'white',
+            borderRadius: "50%",
+            border: "3px solid white",
+            overflow: "hidden",
+            backgroundColor: "white",
           }}
         >
           <img
             src={logo}
             alt="Logo"
             style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
             }}
           />
         </Box>
@@ -104,7 +104,7 @@ const BusinessCard = ({
         <Typography variant="body2" sx={{ mt: 1 }} noWrap>
           {description}
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
           <Typography variant="caption" color="text.secondary">
             {location}
           </Typography>
