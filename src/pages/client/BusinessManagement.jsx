@@ -30,6 +30,7 @@ import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { storage } from "../../firebase";
 import MainLayout from "../../layouts/MainLayout";
 import api from "../../api/axiosConfig";
+import BusinessCard from "./BusinessCard";
 
 // --- Constants ---
 const COMPONENT_TITLE = "Business Management";
@@ -401,13 +402,29 @@ export default function BusinessManagement() {
     }
   };
 
+    useEffect(() => {
+      const fetchBusinesses = async () => {
+        try {
+          const response = await axios.get('/api/v1/businesses');
+          setBusinesses(response.data); // change if your API structure is different
+        } catch (error) {
+          console.error('Failed to fetch businesses:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+  
+      fetchBusinesses();
+    }, []);
+
+    
   return (
     <MainLayout>
       <Helmet>
         <title>{COMPONENT_TITLE}</title>
       </Helmet>
 
-      <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+      <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
         {/* --- Header --- */}
         <Box
           sx={{
@@ -432,7 +449,7 @@ export default function BusinessManagement() {
           </Button>
         </Box>
 
-        {/* --- Filters/Search --- */}
+        {/* --- Filters/Search ---
         <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
           <TextField
             placeholder="Search by name..."
@@ -459,7 +476,7 @@ export default function BusinessManagement() {
               </MenuItem>
             ))}
           </TextField>
-        </Box>
+        </Box> */}
 
         {/* --- Display General Errors --- */}
         {error && (
@@ -467,156 +484,25 @@ export default function BusinessManagement() {
             {error}
           </Typography>
         )}
-
-        {/* --- Table --- */}
-        <Paper elevation={2} sx={{ overflow: "hidden" }}>
-          <TableContainer>
-            <Table stickyHeader aria-label="businesses table">
-              <TableHead sx={{ backgroundColor: "action.hover" }}>
-                <TableRow>
-                  {TABLE_HEADERS.map((head) => (
-                    <TableCell key={head} sx={{ fontWeight: "bold" }}>
-                      {head}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={TABLE_HEADERS.length}
-                      align="center"
-                      sx={{ py: 4 }}
-                    >
-                      <CircularProgress />
-                      <Typography sx={{ mt: 1 }}>
-                        Loading Businesses...
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : businessesToDisplay.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={TABLE_HEADERS.length}
-                      align="center"
-                      sx={{ py: 4 }}
-                    >
-                      <Typography>
-                        {searchQuery || filters.status !== "All"
-                          ? "No businesses match your criteria."
-                          : "No businesses found. Add one to get started!"}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  businessesToDisplay.map((business) => (
-                    <TableRow
-                      hover
-                      key={business._id}
-                      sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-                    >
-                      <TableCell component="th" scope="row">
-                        {business._id}
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          width: 500,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {business.name}
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {business.description}
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {business.l}
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {business.location}
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={business.status}
-                          color={
-                            business.status === "active" ? "success" : "default"
-                          }
-                          size="small"
-                          // variant="outlined"
-                        />
-                      </TableCell>
-                      <TableCell
-                        align="center"
-                        sx={{
-                          display: "flex",
-                          justifyContent: "center",
-                          alignItems: "center",
-                          height: "100%",
-                        }}
-                      >
-                        <Tooltip title="Edit">
-                          <span>
-                            <IconButton
-                              onClick={() => handleOpenEditDialog(business)}
-                              size="small"
-                              disabled={isSubmitting || isDeleting}
-                              color="primary"
-                            >
-                              <Edit fontSize="small" />
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-                        <Tooltip title="Delete">
-                          <span>
-                            <IconButton
-                              color="error"
-                              onClick={() =>
-                                handleOpenConfirmDeleteDialog(business._id)
-                              }
-                              size="small"
-                              disabled={isSubmitting || isDeleting}
-                            >
-                              <DeleteTwoToneIcon fontSize="small" />
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          {totalItems > 0 && (
-            <TablePagination
-              component="div"
-              count={totalItems}
-              page={pageNumber - 1}
-              onPageChange={handlePageChange}
-              rowsPerPage={pageSize}
-              onRowsPerPageChange={handleRowsPerPageChange}
-              rowsPerPageOptions={ROWS_PER_PAGE_OPTIONS}
-              showFirstButton
-              showLastButton
-            />
-          )}
-        </Paper>
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+            {businesses.map((item) => (
+              <BusinessCard
+                key={item._id}
+                id={item._id}
+                name={item.userId?.name || 'No name'}
+                description={item.description || 'No description'}
+                location={item.location || 'Unknown'}
+                photo={item.image || 'https://via.placeholder.com/300'}
+                logo={item.logo || 'https://via.placeholder.com/100'}
+                companyName={item.name || 'Company'}
+                onEdit={(id) => {
+                  const businessToEdit = businesses.find(b => b._id === id);
+                  if (businessToEdit) handleOpenEditDialog(businessToEdit);
+                }}
+                onDelete={(id) => handleOpenConfirmDeleteDialog(id)}
+              />
+            ))}
+          </Box>
       </Box>
 
       {/* --- Add/Edit Dialog --- */}
@@ -669,7 +555,7 @@ export default function BusinessManagement() {
           </TextField>
 
           <TextField
-            label="Name"
+            label="CompanyName"
             name="name"
             value={formState.name}
             onChange={handleFormInputChange}
