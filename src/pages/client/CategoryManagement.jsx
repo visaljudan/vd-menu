@@ -21,6 +21,7 @@ const ConfirmDialog = ({ open, onClose, onConfirm, message }) => (
     </DialogActions>
   </Dialog>
 );
+
 const CategoryModal = ({ open, onClose, onSave, category, businesses, isEdit }) => {
   const [form, setForm] = useState({
     name: category?.name || "",
@@ -28,6 +29,25 @@ const CategoryModal = ({ open, onClose, onSave, category, businesses, isEdit }) 
     description: category?.description || "",
     status: category?.status || "active"
   });
+
+  useEffect(() => {
+    if (isEdit && category) {
+      setForm({
+        name: category.name || "",
+        businessId: category.businessId?._id || "",
+        description: category.description || "",
+        status: category.status || "active"
+      });
+    } else {
+      setForm({
+        name: "",
+        businessId: "",
+        description: "",
+        status: "active"
+      });
+    }
+  }, [category, isEdit]);
+
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
   
   const handleSubmit = () => {
@@ -37,7 +57,6 @@ const CategoryModal = ({ open, onClose, onSave, category, businesses, isEdit }) 
       status: form.status
     };
     
-    // Only include description if it's not empty
     if (form.description.trim()) {
       payload.description = form.description.trim();
     }
@@ -102,7 +121,7 @@ const CategoryModal = ({ open, onClose, onSave, category, businesses, isEdit }) 
           margin="dense"
         >
           {["active", "inactive"].map(opt => (
-            <MenuItem key={opt} value={opt}>{opt}</MenuItem>
+            <MenuItem key={opt} value={opt}>{opt.charAt(0).toUpperCase() + opt.slice(1)}</MenuItem>
           ))}
         </TextField>
       </DialogContent>
@@ -123,58 +142,81 @@ const CategoryModal = ({ open, onClose, onSave, category, businesses, isEdit }) 
 const CategoryManagement = () => {
   const { token } = useSelector(state => state.user.currentUser || {});
   const [state, setState] = useState({
-    categories: [], businesses: [], loading: false, error: null,
-    page: 1, pageSize: 10, total: 0, businessFilter: ""
+    categories: [], 
+    businesses: [], 
+    loading: false, 
+    error: null,
+    page: 0, // Changed to 0-based for MUI pagination
+    pageSize: 10, 
+    total: 0, 
+    businessFilter: ""
   });
+  
   const [modals, setModals] = useState({
-    add: false, edit: false, confirm: false, snackbar: { open: false, message: "", severity: "success" }
+    add: false, 
+    edit: false, 
+    confirm: false, 
+    snackbar: { open: false, message: "", severity: "success" }
   });
+  
   const [selected, setSelected] = useState({ category: null, deleteId: null });
 
   const fetchData = useCallback(async (type) => {
     if (!token) return;
     
-    setState(prev => ({ ...prev, loading: true }));
+    setState(prev => ({ ...prev, loading: true, error: null }));
     try {
       if (type === 'businesses') {
-        const res = await api.get('/api/v1/businesses?limit=1000', { headers: { Authorization: `Bearer ${token}` } });
+        const res = await api.get('/api/v1/businesses?limit=1000', { 
+          headers: { Authorization: `Bearer ${token}` } 
+        });
         setState(prev => ({ ...prev, businesses: res.data.data?.data || [] }));
       } else {
-        let url = `/api/v1/categories?page=${state.page}&limit=${state.pageSize}`;
+        let url = `/api/v1/categories?page=${state.page + 1}&limit=${state.pageSize}`;
         if (state.businessFilter) url += `&businessId=${state.businessFilter}`;
         
-        const res = await api.get(url, { headers: { Authorization: `Bearer ${token}` } });
+        const res = await api.get(url, { 
+          headers: { Authorization: `Bearer ${token}` } 
+        });
         const data = res.data.data;
         setState(prev => ({ ...prev, 
           categories: data?.data || [], 
-          total: data?.total || 0 
+          total: data?.total || 0,
+          loading: false
         }));
       }
     } catch (err) {
-      setState(prev => ({ ...prev, error: err.response?.data?.message || "Error fetching data" }));
+      const errorMessage = err.response?.data?.message || "Error fetching data";
+      setState(prev => ({ ...prev, error: errorMessage, loading: false }));
       setModals(prev => ({ ...prev, 
-        snackbar: { open: true, message: "Operation failed", severity: "error" }
+        snackbar: { open: true, message: errorMessage, severity: "error" }
       }));
-    } finally {
-      setState(prev => ({ ...prev, loading: false }));
     }
   }, [token, state.page, state.pageSize, state.businessFilter]);
 
-  useEffect(() => { fetchData('businesses') }, [fetchData]);
-  useEffect(() => { fetchData() }, [fetchData]);
+  useEffect(() => { 
+    fetchData('businesses');
+  }, []);
+
+  useEffect(() => { 
+    fetchData();
+  }, [fetchData]);
 
   const handleDelete = async () => {
     if (!selected.deleteId) return;
     try {
-      await api.delete(`/api/v1/categories/${selected.deleteId}`, { headers: { Authorization: `Bearer ${token}` } });
+      await api.delete(`/api/v1/categories/${selected.deleteId}`, { 
+        headers: { Authorization: `Bearer ${token}` } 
+      });
       setModals(prev => ({ ...prev, 
         confirm: false, 
         snackbar: { open: true, message: "Deleted successfully", severity: "success" }
       }));
       fetchData();
     } catch (err) {
+      const errorMessage = err.response?.data?.message || "Delete failed";
       setModals(prev => ({ ...prev, 
-        snackbar: { open: true, message: "Delete failed", severity: "error" }
+        snackbar: { open: true, message: errorMessage, severity: "error" }
       }));
     }
   };
@@ -191,14 +233,27 @@ const CategoryManagement = () => {
       }));
       fetchData();
     } catch (err) {
+      const errorMessage = err.response?.data?.message || "Operation failed";
       setModals(prev => ({ ...prev, 
-        snackbar: { open: true, message: "Operation failed", severity: "error" }
+        snackbar: { open: true, message: errorMessage, severity: "error" }
       }));
     }
   };
 
   const handleFilterChange = (e) => {
-    setState(prev => ({ ...prev, businessFilter: e.target.value, page: 1 }));
+    setState(prev => ({ ...prev, businessFilter: e.target.value, page: 0 }));
+  };
+
+  const handlePageChange = (_, newPage) => {
+    setState(prev => ({ ...prev, page: newPage }));
+  };
+
+  const handleRowsPerPageChange = (e) => {
+    setState(prev => ({ 
+      ...prev, 
+      pageSize: +e.target.value,
+      page: 0
+    }));
   };
 
   return (
@@ -237,7 +292,10 @@ const CategoryManagement = () => {
 
           <Button 
             variant="contained" 
-            onClick={() => setModals(prev => ({ ...prev, add: true }))}
+            onClick={() => {
+              setSelected({ category: null });
+              setModals(prev => ({ ...prev, add: true }));
+            }}
             disabled={!token}
           >
             Add Category
@@ -253,50 +311,73 @@ const CategoryManagement = () => {
                 <TableCell>NO</TableCell>
                 <TableCell>Business</TableCell>
                 <TableCell>Name</TableCell>
-                <TableCell>Slug</TableCell>
+                <TableCell>Description</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {state.loading ? (
-                <TableRow><TableCell colSpan={6} align="center" sx={{ py: 4 }}>
-                  <CircularProgress />
-                </TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                    <CircularProgress />
+                  </TableCell>
+                </TableRow>
               ) : state.categories.length === 0 ? (
-                <TableRow><TableCell colSpan={6} align="center" sx={{ py: 4 }}>
-                  No categories found
-                </TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                    No categories found
+                  </TableCell>
+                </TableRow>
               ) : (
                 state.categories.map((cat, i) => (
                   <TableRow key={cat._id} hover>
-                    <TableCell>{(state.page - 1) * state.pageSize + i + 1}</TableCell>
+                    <TableCell>{state.page * state.pageSize + i + 1}</TableCell>
                     <TableCell>{cat.businessId?.name || 'N/A'}</TableCell>
                     <TableCell>{cat.name}</TableCell>
-                    <TableCell>{cat.slug || '-'}</TableCell>
-                    <TableCell sx={{ color: cat.status === 'active' ? 'success.main' : 'text.secondary' }}>
-                      {cat.status}
+                    <TableCell>
+                      <Tooltip title={cat.description || ''}>
+                        <Box sx={{ 
+                          whiteSpace: 'nowrap', 
+                          overflow: 'hidden', 
+                          textOverflow: 'ellipsis',
+                          maxWidth: '200px'
+                        }}>
+                          {cat.description || '-'}
+                        </Box>
+                      </Tooltip>
+                    </TableCell>
+                    <TableCell sx={{ 
+                      color: cat.status === 'active' ? 'success.main' : 'error.main',
+                      fontWeight: 'medium'
+                    }}>
+                      {cat.status.charAt(0).toUpperCase() + cat.status.slice(1)}
                     </TableCell>
                     <TableCell align="right">
-                      <IconButton 
-                        onClick={() => {
-                          setSelected({ category: cat });
-                          setModals(prev => ({ ...prev, edit: true }));
-                        }}
-                        size="small"
-                      >
-                        <Edit fontSize="inherit" />
-                      </IconButton>
-                      <IconButton 
-                        onClick={() => {
-                          setSelected({ deleteId: cat._id });
-                          setModals(prev => ({ ...prev, confirm: true }));
-                        }}
-                        color="error"
-                        size="small"
-                      >
-                        <Delete fontSize="inherit" />
-                      </IconButton>
+                      <Tooltip title="Edit">
+                        <IconButton 
+                          onClick={() => {
+                            setSelected({ category: cat });
+                            setModals(prev => ({ ...prev, edit: true }));
+                          }}
+                          size="small"
+                          color="primary"
+                        >
+                          <Edit fontSize="inherit" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Delete">
+                        <IconButton 
+                          onClick={() => {
+                            setSelected({ deleteId: cat._id });
+                            setModals(prev => ({ ...prev, confirm: true }));
+                          }}
+                          color="error"
+                          size="small"
+                        >
+                          <Delete fontSize="inherit" />
+                        </IconButton>
+                      </Tooltip>
                     </TableCell>
                   </TableRow>
                 ))
@@ -311,38 +392,54 @@ const CategoryManagement = () => {
             component="div"
             count={state.total}
             rowsPerPage={state.pageSize}
-            page={state.page - 1}
-            onPageChange={(_, p) => setState(prev => ({ ...prev, page: p + 1 }))}
-            onRowsPerPageChange={(e) => setState(prev => ({ 
-              ...prev, 
-              pageSize: +e.target.value,
-              page: 1 
-            }))}
+            page={state.page}
+            onPageChange={handlePageChange}
+            onRowsPerPageChange={handleRowsPerPageChange}
           />
         )}
 
         <CategoryModal
-          open={modals.add || modals.edit}
-          onClose={() => setModals(prev => ({ ...prev, add: false, edit: false }))}
+          open={modals.add}
+          onClose={() => setModals(prev => ({ ...prev, add: false }))}
+          onSave={handleSave}
+          category={null}
+          businesses={state.businesses}
+          isEdit={false}
+        />
+
+        <CategoryModal
+          open={modals.edit}
+          onClose={() => setModals(prev => ({ ...prev, edit: false }))}
           onSave={handleSave}
           category={selected.category}
           businesses={state.businesses}
-          isEdit={modals.edit}
+          isEdit={true}
         />
 
         <ConfirmDialog
           open={modals.confirm}
           onClose={() => setModals(prev => ({ ...prev, confirm: false }))}
           onConfirm={handleDelete}
-          message="Are you sure you want to delete this category?"
+          message="Are you sure you want to delete this category? This action cannot be undone."
         />
 
         <Snackbar
           open={modals.snackbar.open}
           autoHideDuration={6000}
-          onClose={() => setModals(prev => ({ ...prev, snackbar: { ...prev.snackbar, open: false } }))}
+          onClose={() => setModals(prev => ({ 
+            ...prev, 
+            snackbar: { ...prev.snackbar, open: false } 
+          }))}
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
         >
-          <Alert severity={modals.snackbar.severity}>
+          <Alert 
+            severity={modals.snackbar.severity}
+            onClose={() => setModals(prev => ({ 
+              ...prev, 
+              snackbar: { ...prev.snackbar, open: false } 
+            }))}
+            sx={{ width: '100%' }}
+          >
             {modals.snackbar.message}
           </Alert>
         </Snackbar>

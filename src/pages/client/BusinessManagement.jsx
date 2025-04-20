@@ -532,7 +532,7 @@ export default function BusinessManagement() {
           >
             {telegrams?.data?.map((telegram, index) => (
               <MenuItem key={telegram._id} value={telegram._id}>
-                {telegram.name}
+                {telegram.name}title
               </MenuItem>
             ))}
           </TextField>
