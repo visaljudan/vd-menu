@@ -190,9 +190,8 @@ const MainLayout = ({ children }) => {
   return (
     <AppProvider theme={demoTheme}>
       <DashboardLayout navigation={filteredNavigation}>
-        <div>{user.name}</div>
         <PageContainer>
-          <Header title={headerTitle} />
+          {/* <Header title={headerTitle} /> */}
           <div className="p-4">{children}</div>
         </PageContainer>
       </DashboardLayout>

@@ -46,13 +46,11 @@ const ConfirmDialog = ({ message, onConfirm, onClose, open }) => (
 
 const ItemManagement = () => {
   const { currentUser } = useSelector((state) => state.user);
-  // Removed user variable as it wasn't used directly for API calls here
-  const token = currentUser?.token;
 
   const title = "Item Management";
   const [items, setItems] = useState([]);
-  const [totalItems, setTotalItems] = useState(0); // State for total items from API for pagination
-  const [pageNumber, setPageNumber] = useState(1); // Use 1-based indexing for clarity
+  const [totalItems, setTotalItems] = useState(0);
+  const [pageNumber, setPageNumber] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState({ status: "All" });
@@ -66,60 +64,41 @@ const ItemManagement = () => {
     price: "",
     status: "Active",
   });
-  const [isLoading, setIsLoading] = useState(false); // Loading state
-  const [error, setError] = useState(null); // Error state
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // --- Function to fetch items from API ---
   const fetchItems = useCallback(async () => {
-    if (!token) {
-      setError("Authentication token not found.");
-      setItems([]);
-      setTotalItems(0);
-      return;
-    }
     setIsLoading(true);
-    setError(null); // Clear previous errors
+    setError(null);
     try {
-      // Adjust params based on your API's expected query parameters for pagination/filtering
       const params = {
         page: pageNumber,
         size: pageSize,
-        // --- Add backend filtering/searching params if API supports it ---
-        // search: searchQuery,
-        // status: filters.status === "All" ? undefined : filters.status,
       };
 
       const response = await api.get("/api/v1/items", {
-        headers: { Authorization: `Bearer ${token}` },
-        params: params, // Send parameters
+        params: params,
       });
 
-      // --- Adjust based on your API response structure ---
-      // Assuming response.data contains { items: [...], totalItems: number }
-      // or { content: [...], totalElements: number } for Spring Pageable
-      const responseData = response.data.data;
-      setItems(responseData.items || responseData.content || []); 
-      setTotalItems(responseData.totalItems || responseData.totalElements || 0); 
-      // --- End of adaptation section ---
-console.log(response.data.data);
+      const data = response.data.data;
+      setItems(data.data);
+      setTotalItems(data.total);
     } catch (err) {
       console.error("Failed to fetch items:", err);
       setError(
         `Failed to fetch items: ${err.response?.data?.message || err.message}`
       );
-      setItems([]); // Clear items on error
-      setTotalItems(0); // Reset total on error
+      setItems([]);
+      setTotalItems(0);
     } finally {
       setIsLoading(false);
     }
-  }, [token, pageNumber, pageSize /* Add searchQuery, filters.status if using backend filtering */]); // Dependencies for useCallback
+  }, [pageNumber, pageSize]);
 
-  // --- Fetch items on initial load and when dependencies change ---
   useEffect(() => {
     fetchItems();
-  }, [fetchItems]); // fetchItems is stable due to useCallback
+  }, [fetchItems]);
 
-  // --- Form change handler remains the same ---
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -127,36 +106,26 @@ console.log(response.data.data);
 
   // --- Handle Add/Update ---
   const handleSubmit = async () => {
-    if (!token) {
-      setError("Authentication token not found. Cannot save item.");
-      return;
-    }
-    setError(null); // Clear previous errors
+    setError(null);
     const itemData = { ...form };
-    // Ensure price is a number if required by backend
     itemData.price = parseFloat(itemData.price) || 0;
 
     try {
       if (editingItem) {
         // Update existing item
-        await api.put(`/api/v1/items/${editingItem.id}`, itemData, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await api.patch(`/api/v1/items/${editingItem.id}`, itemData);
       } else {
         // Add new item
-        await api.post("/api/v1/items", itemData, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await api.post("/api/v1/items", itemData);
       }
-      setOpen(false); // Close dialog
-      resetFormAndEditingState(); // Reset form
-      fetchItems(); // Refetch items to show the latest data
+      setOpen(false);
+      resetFormAndEditingState();
+      fetchItems();
     } catch (err) {
       console.error("Failed to save item:", err);
       setError(
         `Failed to save item: ${err.response?.data?.message || err.message}`
       );
-      // Keep dialog open on error so user can retry or cancel
     }
   };
 
@@ -174,17 +143,17 @@ console.log(response.data.data);
     setOpen(true);
   };
 
-   // --- Reset Form and Editing State ---
-   const resetFormAndEditingState = () => {
-     setForm({
-       name: "",
-       category: "",
-       price: "",
-       status: "Active",
-     });
-     setEditingItem(null);
-     setError(null); // Also clear errors on close/reset
-   };
+  // --- Reset Form and Editing State ---
+  const resetFormAndEditingState = () => {
+    setForm({
+      name: "",
+      category: "",
+      price: "",
+      status: "Active",
+    });
+    setEditingItem(null);
+    setError(null); // Also clear errors on close/reset
+  };
 
   // --- Handle Delete Confirmation Dialog ---
   const handleDeleteRequest = (itemId) => {
@@ -195,40 +164,33 @@ console.log(response.data.data);
 
   // --- Handle Delete Action ---
   const handleDeleteConfirm = async () => {
-    if (!token || !deleteId) {
-      setError("Authentication token or item ID missing. Cannot delete.");
-      setConfirmOpen(false);
-      return;
-    }
-    setError(null); // Clear previous errors
+    setError(null);
     try {
       await api.delete(`/api/v1/items/${deleteId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setConfirmOpen(false); // Close confirmation dialog
-      setDeleteId(null); // Reset delete id
-      // Optional: Check if the deleted item was the last one on the page
+      setConfirmOpen(false);
+      setDeleteId(null);
       if (items.length === 1 && pageNumber > 1) {
-        setPageNumber(pageNumber - 1); // Go to previous page
+        setPageNumber(pageNumber - 1);
       } else {
-        fetchItems(); // Refetch items for the current page
+        fetchItems();
       }
     } catch (err) {
       console.error("Failed to delete item:", err);
       setError(
         `Failed to delete item: ${err.response?.data?.message || err.message}`
       );
-      setConfirmOpen(false); // Close dialog even on error
+      setConfirmOpen(false);
     }
   };
 
   // --- Handle Closing the Add/Edit Dialog ---
   const handleCloseDialog = () => {
-      setOpen(false);
-      resetFormAndEditingState();
+    setOpen(false);
+    resetFormAndEditingState();
   };
 
-  
   const filteredItems = items.filter(
     ({ name, status }) =>
       (filters.status === "All" || status === filters.status) &&
@@ -247,10 +209,9 @@ console.log(response.data.data);
 
   // --- Open Add Item Dialog ---
   const handleOpenAddDialog = () => {
-      resetFormAndEditingState(); // Ensure form is clear before opening for add
-      setOpen(true);
+    resetFormAndEditingState(); // Ensure form is clear before opening for add
+    setOpen(true);
   };
-
 
   return (
     <MainLayout>
@@ -274,9 +235,9 @@ console.log(response.data.data);
 
         {/* Display Error Alert */}
         {error && (
-            <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
             {error}
-            </Alert>
+          </Alert>
         )}
 
         <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
@@ -327,11 +288,18 @@ console.log(response.data.data);
                 </TableRow>
               ) : filteredItems.length > 0 ? (
                 filteredItems.map((item) => (
-                  <TableRow key={item.id}> {/* Assuming API provides 'id' */}
+                  <TableRow key={item.id}>
+                    {" "}
+                    {/* Assuming API provides 'id' */}
                     <TableCell>{item.name}</TableCell>
-                    <TableCell>{item.category}</TableCell>
+                    <TableCell>{item.categoryId?.name}</TableCell>
                     {/* Format price if needed */}
-                    <TableCell>${typeof item.price === 'number' ? item.price.toFixed(2) : item.price}</TableCell>
+                    <TableCell>
+                      $
+                      {typeof item.price === "number"
+                        ? item.price.toFixed(2)
+                        : item.price}
+                    </TableCell>
                     <TableCell>
                       <Chip
                         label={item.status}
@@ -341,7 +309,10 @@ console.log(response.data.data);
                     </TableCell>
                     <TableCell align="right">
                       <Tooltip title="Edit">
-                        <IconButton onClick={() => handleEdit(item)} size="small">
+                        <IconButton
+                          onClick={() => handleEdit(item)}
+                          size="small"
+                        >
                           <Edit fontSize="small" />
                         </IconButton>
                       </Tooltip>
@@ -350,7 +321,7 @@ console.log(response.data.data);
                           onClick={() => handleDeleteRequest(item.id)} // Use specific handler
                           size="small"
                         >
-                          <DeleteTwoToneIcon color="error" fontSize="small"/>
+                          <DeleteTwoToneIcon color="error" fontSize="small" />
                         </IconButton>
                       </Tooltip>
                     </TableCell>
@@ -359,7 +330,11 @@ console.log(response.data.data);
               ) : (
                 <TableRow>
                   <TableCell colSpan={5} align="center">
-                    { totalItems === 0 && !searchQuery && filters.status === "All" ? "No items exist." : "No items found matching your criteria." }
+                    {totalItems === 0 &&
+                    !searchQuery &&
+                    filters.status === "All"
+                      ? "No items exist."
+                      : "No items found matching your criteria."}
                   </TableCell>
                 </TableRow>
               )}
@@ -396,12 +371,16 @@ console.log(response.data.data);
           </IconButton>
         </DialogTitle>
         <DialogContent>
-           {/* Display Dialog Specific Error */}
-           {error && (
-              <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+          {/* Display Dialog Specific Error */}
+          {error && (
+            <Alert
+              severity="error"
+              sx={{ mb: 2 }}
+              onClose={() => setError(null)}
+            >
               {error}
-              </Alert>
-           )}
+            </Alert>
+          )}
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
             <TextField
               label="Name"
@@ -445,7 +424,8 @@ console.log(response.data.data);
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button> {/* Use specific handler */}
+          <Button onClick={handleCloseDialog}>Cancel</Button>{" "}
+          {/* Use specific handler */}
           <Button onClick={handleSubmit} variant="contained">
             {editingItem ? "Update" : "Create"}
           </Button>
