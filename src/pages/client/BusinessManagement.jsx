@@ -115,7 +115,7 @@ export default function BusinessManagement() {
   const [formError, setFormError] = useState(null);
 
   const fetchBusinesses = useCallback(async () => {
-    setLoading(true);
+    setIsLoading(true);
     setError(null);
     const params = new URLSearchParams({
       page: pageNumber,
@@ -136,7 +136,7 @@ export default function BusinessManagement() {
       setBusinesses([]);
       setTotalItems(0);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   }, [token, pageNumber, pageSize, searchQuery, filters.status]);
 
@@ -456,7 +456,28 @@ export default function BusinessManagement() {
           </Typography>
         )}
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-          {totalItems === 0 ? (
+          {isLoading ? (
+            <Box
+              sx={{
+                width: "100%",
+                display: "flex",
+                justifyContent: "center",
+                py: 4,
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 2,
+                }}
+              >
+                <CircularProgress size={24} />
+                <Typography>Loading Items...</Typography>
+              </Box>
+            </Box>
+          ) : totalItems === 0 ? (
             <Typography color="error" sx={{ mb: 2 }} role="alert">
               Don't have data yet
             </Typography>

@@ -52,6 +52,7 @@ const CategoryModal = ({
   category,
   businesses,
   isEdit,
+  isLoading,
 }) => {
   const [form, setForm] = useState({
     name: category?.name || "",
@@ -169,7 +170,7 @@ const CategoryModal = ({
           variant="contained"
           disabled={!requiredFieldsValid}
         >
-          Save
+          {isLoading ? "Saving..." : "Save"}
         </Button>
       </DialogActions>
     </Dialog>
@@ -180,6 +181,7 @@ const CategoryManagement = () => {
   const { currentUser } = useSelector((state) => state.user);
   const user = currentUser?.user;
   const token = currentUser?.token;
+  const [isLoading, setIsLoading] = useState(false);
 
   const [state, setState] = useState({
     categories: [],
@@ -270,7 +272,7 @@ const CategoryManagement = () => {
   };
 
   const handleSave = async (data) => {
-    console.log(data);
+    setIsLoading(true);
     try {
       const method = selected.category ? "patch" : "post";
       const url = selected.category
@@ -294,6 +296,8 @@ const CategoryManagement = () => {
         ...prev,
         snackbar: { open: true, message: errorMessage, severity: "error" },
       }));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -497,6 +501,7 @@ const CategoryManagement = () => {
           category={null}
           businesses={state.businesses}
           isEdit={false}
+          isLoading={isLoading}
         />
 
         <CategoryModal
@@ -506,6 +511,7 @@ const CategoryManagement = () => {
           category={selected.category}
           businesses={state.businesses}
           isEdit={true}
+          isLoading={isLoading}
         />
 
         <ConfirmDialog
