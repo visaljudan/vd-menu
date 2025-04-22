@@ -39,7 +39,8 @@ const ConfirmDialog = ({ message, onConfirm, onClose, open }) => (
   <Dialog open={open} onClose={onClose}>
     <DialogTitle>Confirmation</DialogTitle>
     <DialogContent>
-      <Typography>{message}</Typography> {/* Use Typography for consistent styling */}
+      <Typography>{message}</Typography>{" "}
+      {/* Use Typography for consistent styling */}
     </DialogContent>
     <DialogActions>
       <Button onClick={onClose}>Cancel</Button>
@@ -56,7 +57,7 @@ const initialFormState = {
   description: "",
   businessId: "", // Added businessId
   category: "",
-  image: null, 
+  image: null,
   price: "",
   status: "Active",
 };
@@ -88,44 +89,36 @@ const ItemManagement = () => {
   const [isUploading, setIsUploading] = useState(false); // Image upload status
 
   const [filters, setFilters] = useState({
-    status: "All", // Consider if status filter is needed/supported by API
+    status: "All",
     business: "",
     category: "",
   });
-
-  // --- API Request Configuration ---
-  // Setup Axios instance headers for authenticated requests if not done globally
-  const authApi = api; // Use the imported api instance
-  // Consider adding an interceptor to `api` in `axiosConfig.js` to automatically add the token
-  const getAuthHeaders = useCallback(() => {
-    return { headers: { Authorization: `Bearer ${token}` } };
-  }, [token]);
 
   // --- Data Fetching ---
 
   const fetchItems = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    // --- !!! Assume API supports these filters. Adjust query params as needed. ---
     const params = {
       page: pageNumber,
       size: pageSize,
-      userId: user?._id, 
+      userId: user?._id,
       search: searchQuery,
-      businessId: filters.business || undefined, 
-      categoryId: filters.category || undefined, 
-      
+      businessId: filters.business || undefined,
+      categoryId: filters.category || undefined,
     };
 
-    // Remove undefined params
-    Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
+    Object.keys(params).forEach(
+      (key) => params[key] === undefined && delete params[key]
+    );
 
     try {
-      // --- !!! Adjust API endpoint if needed ---
-      const response = await authApi.get("/api/v1/items", { params, ...getAuthHeaders() });
+      const response = await api.get("/api/v1/items", {
+        params,
+      });
       const data = response.data.data;
-      setItems(data.data || []); // Ensure items is always an array
-      setTotalItems(data.total || 0); // Ensure total is a number
+      setItems(data.data || []);
+      setTotalItems(data.total || 0);
     } catch (err) {
       setError(
         `Failed to fetch items: ${err.response?.data?.message || err.message}`
@@ -135,86 +128,81 @@ const ItemManagement = () => {
     } finally {
       setIsLoading(false);
     }
-    // Include all dependencies that should trigger a refetch
-  }, [pageNumber, pageSize, searchQuery, filters.business, filters.category, getAuthHeaders,user._id]); // Removed user._id unless strictly necessary and stable
+  }, [
+    pageNumber,
+    pageSize,
+    searchQuery,
+    filters.business,
+    filters.category,
+    user._id,
+  ]);
 
   const fetchBusinesses = useCallback(async () => {
-    // No need for setIsLoading here if fetchItems already sets it
     try {
-      // --- !!! Adjust API endpoint if needed ---
-      const response = await authApi.get("/api/v1/businesses", getAuthHeaders());
+      const response = await api.get("/api/v1/businesses");
       setBusinesses(response.data.data.data || []);
     } catch (err) {
-      setError( // Append to existing errors or replace? Consider strategy.
+      setError(
         `Failed to fetch businesses: ${err.response?.data?.message || err.message}`
       );
       setBusinesses([]);
     }
-  }, [getAuthHeaders]);
+  }, []);
 
-  // Fetch categories for a specific business (used in the form)
   const fetchCategoriesForBusiness = useCallback(async (businessId) => {
     if (!businessId) {
-      setDialogCategories([]); // Clear categories if no business selected
+      setDialogCategories([]);
       return;
     }
-    // Consider adding a loading state for the category dropdown specifically
     try {
-       // --- !!! Adjust API endpoint and params if needed ---
-      const response = await authApi.get(
-        `/api/v1/categories?businessId=${businessId}`, // Fetch all categories for the business
-        getAuthHeaders()
+      const response = await api.get(
+        `/api/v1/categories?businessId=${businessId}`
       );
       setDialogCategories(response.data.data.data || []);
     } catch (err) {
-       // Handle error fetching categories for the dialog (e.g., set form error)
-      setFormErrors(prev => ({ ...prev, category: "Could not load categories" }));
+      setFormErrors((prev) => ({
+        ...prev,
+        category: "Could not load categories",
+      }));
       console.error("Failed to fetch categories for dialog:", err);
       setDialogCategories([]);
     }
-  }, [getAuthHeaders]);
+  }, []);
 
   // --- Effects ---
 
-  // Fetch items when pagination, search, or filters change
   useEffect(() => {
     fetchItems();
-  }, [fetchItems]); // fetchItems useCallback handles its own dependencies
+  }, [fetchItems]);
 
-  // Fetch businesses on component mount
   useEffect(() => {
     fetchBusinesses();
   }, [fetchBusinesses]);
 
-  // Fetch categories for the main filter dropdown when the business filter changes
   useEffect(() => {
-    // This fetches categories for the *filter* dropdown, not the dialog
     const fetchFilterCategories = async (businessId) => {
-        if (!businessId) {
-            setCategories([]);
-            return;
-        }
-        try {
-            const response = await authApi.get(
-                `/api/v1/categories?businessId=${businessId}`, getAuthHeaders()
-            );
-            setCategories(response.data.data.data || []);
-        } catch (err) {
-            console.error("Failed to fetch filter categories:", err);
-            setCategories([]);
-        }
+      if (!businessId) {
+        setCategories([]);
+        return;
+      }
+      try {
+        const response = await api.get(
+          `/api/v1/categories?businessId=${businessId}`
+        );
+        setCategories(response.data.data.data || []);
+      } catch (err) {
+        console.error("Failed to fetch filter categories:", err);
+        setCategories([]);
+      }
     };
 
     if (filters.business) {
-        fetchFilterCategories(filters.business);
+      fetchFilterCategories(filters.business);
     } else {
-        setCategories([]); // Clear filter categories if no business filter selected
+      setCategories([]);
     }
-    // Reset category filter if business filter changes
-    setFilters(prev => ({ ...prev, category: '' }));
-
-  }, [filters.business, getAuthHeaders, authApi]);
-
+    setFilters((prev) => ({ ...prev, category: "" }));
+  }, [filters.business]);
 
   // Fetch categories for the *dialog form* when the business selection in the form changes
   useEffect(() => {
@@ -225,18 +213,17 @@ const ItemManagement = () => {
     }
   }, [form.businessId, fetchCategoriesForBusiness]);
 
-
   // --- Form Handling ---
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => {
-        const newState = { ...prev, [name]: value };
-        // If business changes, reset category
-        if (name === 'businessId') {
-            newState.category = '';
-        }
-        return newState;
+      const newState = { ...prev, [name]: value };
+      // If business changes, reset category
+      if (name === "businessId") {
+        newState.category = "";
+      }
+      return newState;
     });
     // Clear validation error for the field being changed
     if (formErrors[name]) {
@@ -244,7 +231,7 @@ const ItemManagement = () => {
     }
   };
 
-   // Upload image to Firebase
+  // Upload image to Firebase
   const uploadImage = async (file) => {
     if (!file) throw new Error("No file selected");
     setIsUploading(true);
@@ -275,10 +262,10 @@ const ItemManagement = () => {
             setUploadProgress(100); // Mark as complete
             resolve(downloadURL); // Resolve the promise with the URL
           } catch (error) {
-             console.error("Error getting download URL:", error);
-             setIsUploading(false);
-             setUploadProgress(0);
-             reject(error); // Reject if getting URL fails
+            console.error("Error getting download URL:", error);
+            setIsUploading(false);
+            setUploadProgress(0);
+            reject(error); // Reject if getting URL fails
           }
         }
       );
@@ -287,49 +274,35 @@ const ItemManagement = () => {
 
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
-    setFormErrors((prev) => ({ ...prev, image: null })); // Clear previous image errors
+    setFormErrors((prev) => ({ ...prev, image: null }));
 
     if (file) {
-      // Basic client-side validation (optional, server should validate too)
-      if (file.size > 5 * 1024 * 1024) { // Increased limit to 5MB
+      if (file.size > 5 * 1024 * 1024) {
         setFormErrors((prev) => ({
           ...prev,
           image: "File size must be under 5MB.",
         }));
         return;
       }
-      if (!file.type.startsWith('image/')) {
-           setFormErrors((prev) => ({
+      if (!file.type.startsWith("image/")) {
+        setFormErrors((prev) => ({
           ...prev,
           image: "Invalid file type. Please select an image.",
         }));
         return;
       }
 
-      // Optional: Check dimensions client-side (can be complex)
-      // const img = new Image();
-      // const reader = new FileReader();
-      // reader.onload = (event) => {
-      //   img.onload = () => {
-      //     // Dimension check logic here
-      //     // if (img.width > 1000 || img.height > 1000) { ... set error ... return; }
-      //     // Proceed with upload if dimensions are okay
-      //   };
-      //   img.src = event.target.result;
-      // };
-      // reader.readAsDataURL(file);
-
       try {
         const imageUrl = await uploadImage(file);
-        setForm((prev) => ({ ...prev, image: imageUrl })); // Update form state with URL
+        setForm((prev) => ({ ...prev, image: imageUrl }));
       } catch (error) {
         console.error("Image upload failed:", error);
         setFormErrors((prev) => ({
           ...prev,
           image: `Upload failed: ${error.message}`,
         }));
-         setForm((prev) => ({ ...prev, image: null })); // Clear image if upload fails
-         e.target.value = null; // Reset file input
+        setForm((prev) => ({ ...prev, image: null }));
+        e.target.value = null;
       }
     }
   };
@@ -339,9 +312,11 @@ const ItemManagement = () => {
     if (!form.businessId) errors.businessId = "Business is required";
     if (!form.category) errors.category = "Category is required";
     if (!form.name.trim()) errors.name = "Name is required";
-    if (!form.description.trim()) errors.description = "Description is required";
+    if (!form.description.trim())
+      errors.description = "Description is required";
     const price = parseFloat(form.price);
-    if (isNaN(price) || price < 0) errors.price = "Price must be a positive number";
+    if (isNaN(price) || price < 0)
+      errors.price = "Price must be a positive number";
     // Image is optional, so no validation unless required
     // if (!form.image) errors.image = "Image is required";
 
@@ -363,7 +338,6 @@ const ItemManagement = () => {
       businessId: form.businessId,
       price: parseFloat(form.price),
       status: form.status,
-      // Only include image if it's set (it will be a URL string)
       ...(form.image && { image: form.image }),
     };
 
@@ -371,12 +345,14 @@ const ItemManagement = () => {
       let response;
       if (editingItem) {
         // --- !!! Ensure API uses _id in URL ---
-        response = await authApi.patch(`/api/v1/items/${editingItem._id}`, itemData, getAuthHeaders());
+        response = await api.patch(
+          `/api/v1/items/${editingItem._id}`,
+          itemData
+        );
       } else {
-        response = await authApi.post("/api/v1/items", itemData, getAuthHeaders());
+        response = await api.post("/api/v1/items", itemData);
       }
 
-      console.log("API Response:", response.data); // Log success response
       setOpen(false); // Close dialog
       resetFormAndEditingState();
       fetchItems(); // Refresh the list
@@ -384,11 +360,12 @@ const ItemManagement = () => {
       console.error("Failed to save item:", err);
       // Set error message based on API response or generic message
       const apiError = err.response?.data?.message || err.message;
-      setError( // Show error in the main page area or dialog? Dialog might be better.
+      setError(
+        // Show error in the main page area or dialog? Dialog might be better.
         `Failed to save item: ${apiError}`
       );
-       // Optionally set form-specific errors if the API returns field-level issues
-       // if (err.response?.data?.errors) { setFormErrors(err.response.data.errors); }
+      // Optionally set form-specific errors if the API returns field-level issues
+      // if (err.response?.data?.errors) { setFormErrors(err.response.data.errors); }
     } finally {
       setIsSubmitting(false);
     }
@@ -397,12 +374,12 @@ const ItemManagement = () => {
   // --- Dialog and Edit/Delete Handling ---
 
   const handleEdit = (item) => {
-    setEditingItem(item); // Store the whole item, including _id and businessId
+    setEditingItem(item);
     setForm({
       name: item.name || "",
       description: item.description || "",
-      businessId: item.businessId?._id || "", // Set business first
-      category: item.categoryId?._id || "",   // Then set category
+      businessId: item.businessId?._id || "",
+      category: item.categoryId?._id || "",
       price: item.price?.toString() || "",
       status: item.status || "Active",
       image: item.image || null, // Pre-fill with existing image URL
@@ -434,19 +411,19 @@ const ItemManagement = () => {
     setError(null);
     // Add loading state for delete action?
     try {
-       // --- Ensure API uses _id in URL ---
-      await authApi.delete(`/api/v1/items/${deleteId}`, getAuthHeaders());
+      // --- Ensure API uses _id in URL ---
+      await api.delete(`/api/v1/items/${deleteId}`);
       setConfirmOpen(false);
       setDeleteId(null);
 
       // Optimistic UI update or refetch:
       // Refetch is simpler unless dealing with large datasets/slow network
       // Check if the deleted item was the last one on the current page
-       if (items.length === 1 && pageNumber > 1) {
-         setPageNumber(pageNumber - 1); // Go to previous page if last item deleted
-       } else {
-         fetchItems(); // Otherwise, just refresh the current page
-       }
+      if (items.length === 1 && pageNumber > 1) {
+        setPageNumber(pageNumber - 1); // Go to previous page if last item deleted
+      } else {
+        fetchItems(); // Otherwise, just refresh the current page
+      }
     } catch (err) {
       setError(
         `Failed to delete item: ${err.response?.data?.message || err.message}`
@@ -475,14 +452,25 @@ const ItemManagement = () => {
     setPageNumber(1); // Reset to first page when page size changes
   };
 
-  // --- Render ---
+  const filteredItems = items?.filter((item) => {
+    const matchesSearch = item.name
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    const matchesBusiness =
+      !filters.business || item.businessId?._id === filters.business;
+    const matchesCategory =
+      !filters.category || item.categoryId?._id === filters.category;
+    return matchesSearch && matchesBusiness && matchesCategory;
+  });
+
   return (
     <MainLayout>
-      <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}> {/* Responsive padding */}
+      <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+        {" "}
+        {/* Responsive padding */}
         <Helmet>
           <title>{title}</title>
         </Helmet>
-
         <Box
           sx={{
             display: "flex",
@@ -493,7 +481,9 @@ const ItemManagement = () => {
             gap: 2, // Add gap between title and button
           }}
         >
-          <Typography variant="h5" fontWeight="bold" component="h1"> {/* Use h1 for semantic heading */}
+          <Typography variant="h5" fontWeight="bold" component="h1">
+            {" "}
+            {/* Use h1 for semantic heading */}
             {title}
           </Typography>
           <Button
@@ -505,21 +495,19 @@ const ItemManagement = () => {
             Add Item
           </Button>
         </Box>
-
         {/* General Error Alert */}
         {error && (
           <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
             {error}
           </Alert>
         )}
-
         {/* Filters */}
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 3 }}>
           <TextField
             placeholder="Search by Name..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            sx={{ flexGrow: 1, minWidth: '200px' }} // Allow search to grow
+            sx={{ flexGrow: 1, minWidth: "200px" }} // Allow search to grow
             disabled={isLoading}
             variant="outlined"
             size="small"
@@ -528,13 +516,16 @@ const ItemManagement = () => {
             select
             label="Filter by Business"
             value={filters.business}
-            onChange={(e) =>
-              // Reset page number when filter changes
-              { setFilters((prev) => ({ ...prev, business: e.target.value, category: '' })); setPageNumber(1); }
-            }
+            onChange={(e) => {
+              setFilters((prev) => ({
+                ...prev,
+                business: e.target.value,
+                category: "",
+              }));
+              setPageNumber(1);
+            }}
             sx={{ width: 200 }}
             disabled={isLoading || businesses.length === 0}
-            displayEmpty // Show label even when empty
             size="small"
           >
             <MenuItem value="">All Businesses</MenuItem>
@@ -548,13 +539,12 @@ const ItemManagement = () => {
             select
             label="Filter by Category"
             value={filters.category}
-            onChange={(e) =>
-              // Reset page number when filter changes
-              { setFilters((prev) => ({ ...prev, category: e.target.value })); setPageNumber(1); }
-            }
+            onChange={(e) => {
+              setFilters((prev) => ({ ...prev, category: e.target.value }));
+              setPageNumber(1);
+            }}
             sx={{ width: 200 }}
-            disabled={isLoading || !filters.business || categories.length === 0} // Disable if no business selected or no categories
-            displayEmpty
+            disabled={isLoading || !filters.business || categories.length === 0}
             size="small"
           >
             <MenuItem value="">All Categories</MenuItem>
@@ -565,14 +555,17 @@ const ItemManagement = () => {
             ))}
           </TextField>
         </Box>
-
         {/* Items Table */}
-        <TableContainer component={Paper} elevation={2}> {/* Add subtle shadow */}
+        <TableContainer component={Paper} elevation={2}>
+          {" "}
+          {/* Add subtle shadow */}
           <Table>
-            <TableHead sx={{ backgroundColor: 'action.hover' }}> {/* Light grey header */}
+            <TableHead sx={{ backgroundColor: "action.hover" }}>
+              {" "}
+              {/* Light grey header */}
               <TableRow>
                 {/* Added Image column */}
-                <TableCell sx={{ width: '80px' }}>Image</TableCell>
+                <TableCell sx={{ width: "80px" }}>Image</TableCell>
                 <TableCell>Name</TableCell>
                 <TableCell>Category</TableCell>
                 <TableCell>Price</TableCell>
@@ -583,40 +576,49 @@ const ItemManagement = () => {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}> {/* Increase padding */}
-                    <CircularProgress size={30} sx={{ mr: 1 }}/>
+                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                    {" "}
+                    {/* Increase padding */}
+                    <CircularProgress size={30} sx={{ mr: 1 }} />
                     <Typography variant="body1">Loading Items...</Typography>
                   </TableCell>
                 </TableRow>
-              ) : items?.length > 0 ? (
-                items.map((item) => (
-                  <TableRow key={item._id} hover> {/* Add hover effect */}
-                     {/* Image Cell */}
+              ) : filteredItems?.length > 0 ? (
+                filteredItems.map((item) => (
+                  <TableRow key={item._id} hover>
+                    {" "}
+                    {/* Add hover effect */}
+                    {/* Image Cell */}
                     <TableCell>
-                       <Box
-                          component="img"
-                          sx={{
-                            height: 40,
-                            width: 40,
-                            objectFit: 'cover', // Crop image nicely
-                            borderRadius: 1, // Slightly rounded corners
-                            border: '1px solid',
-                            borderColor: 'divider' // Use theme divider color
-                          }}
-                          alt={item.name || 'Item image'}
-                          src={item.image || '/placeholder-image.png'} // Provide a fallback placeholder
-                          onError={(e) => { e.target.src = '/placeholder-image.png'; }} // Handle broken images
-                        />
+                      <Box
+                        component="img"
+                        sx={{
+                          height: 40,
+                          width: 40,
+                          objectFit: "cover", // Crop image nicely
+                          borderRadius: 1, // Slightly rounded corners
+                          border: "1px solid",
+                          borderColor: "divider", // Use theme divider color
+                        }}
+                        alt={item.name || "Item image"}
+                        src={item.image || "/placeholder-image.png"} // Provide a fallback placeholder
+                        onError={(e) => {
+                          e.target.src = "/placeholder-image.png";
+                        }} // Handle broken images
+                      />
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 'medium' }}>{item.name}</TableCell>
-                    <TableCell>{item.categoryId?.name || 'N/A'}</TableCell> {/* Handle missing category name */}
+                    <TableCell sx={{ fontWeight: "medium" }}>
+                      {item.name}
+                    </TableCell>
+                    <TableCell>{item.categoryId?.name || "N/A"}</TableCell>{" "}
+                    {/* Handle missing category name */}
                     <TableCell>${item.price?.toFixed(2)}</TableCell>
                     <TableCell>
                       <Chip
                         label={item.status}
                         color={item.status === "Active" ? "success" : "default"}
                         size="small"
-                        sx={{ textTransform: 'capitalize' }} // Capitalize status
+                        sx={{ textTransform: "capitalize" }} // Capitalize status
                       />
                     </TableCell>
                     <TableCell align="right">
@@ -634,7 +636,7 @@ const ItemManagement = () => {
                         </span>
                       </Tooltip>
                       <Tooltip title="Delete">
-                         <span>
+                        <span>
                           <IconButton
                             // --- Pass item._id to delete handler ---
                             onClick={() => handleDeleteRequest(item._id)}
@@ -644,7 +646,7 @@ const ItemManagement = () => {
                           >
                             <DeleteTwoToneIcon fontSize="small" />
                           </IconButton>
-                         </span>
+                        </span>
                       </Tooltip>
                     </TableCell>
                   </TableRow>
@@ -661,7 +663,6 @@ const ItemManagement = () => {
             </TableBody>
           </Table>
         </TableContainer>
-
         {/* Pagination */}
         <TablePagination
           component="div"
@@ -677,7 +678,9 @@ const ItemManagement = () => {
 
       {/* Add/Edit Dialog */}
       <Dialog open={open} onClose={handleCloseDialog} fullWidth maxWidth="sm">
-        <DialogTitle sx={{ pb: 1 }}> {/* Reduce bottom padding */}
+        <DialogTitle sx={{ pb: 1 }}>
+          {" "}
+          {/* Reduce bottom padding */}
           {editingItem ? "Edit Item" : "Add Item"}
           <IconButton
             aria-label="close" // Accessibility
@@ -691,13 +694,24 @@ const ItemManagement = () => {
         <DialogContent>
           {/* Display general submit errors here */}
           {error && (
-            <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+            <Alert
+              severity="error"
+              sx={{ mb: 2 }}
+              onClose={() => setError(null)}
+            >
               {error}
             </Alert>
           )}
           {/* Use Box for layout within DialogContent */}
-          <Box component="form" noValidate autoComplete="off" sx={{ display: "flex", flexDirection: "column", gap: 2.5, mt: 1 }}> {/* Increased gap */}
-              <TextField
+          <Box
+            component="form"
+            noValidate
+            autoComplete="off"
+            sx={{ display: "flex", flexDirection: "column", gap: 2.5, mt: 1 }}
+          >
+            {" "}
+            {/* Increased gap */}
+            <TextField
               select
               label="Business"
               name="businessId"
@@ -707,17 +721,19 @@ const ItemManagement = () => {
               required
               error={!!formErrors.businessId}
               helperText={formErrors.businessId}
-              disabled={isSubmitting || isLoading || editingItem} 
+              disabled={isSubmitting || isLoading || editingItem}
               size="small"
             >
-               <MenuItem value="" disabled><em>Select a Business</em></MenuItem> {/* Placeholder */}
+              <MenuItem value="" disabled>
+                <em>Select a Business</em>
+              </MenuItem>{" "}
+              {/* Placeholder */}
               {businesses.map((bus) => (
                 <MenuItem key={bus._id} value={bus._id}>
                   {bus.name}
                 </MenuItem>
               ))}
             </TextField>
-
             <TextField
               select
               label="Category"
@@ -728,17 +744,22 @@ const ItemManagement = () => {
               required
               error={!!formErrors.category}
               helperText={formErrors.category}
-              disabled={isSubmitting || !form.businessId || dialogCategories.length === 0} 
+              disabled={
+                isSubmitting ||
+                !form.businessId ||
+                dialogCategories.length === 0
+              }
               size="small"
             >
-              <MenuItem value="" disabled><em>Select a Category</em></MenuItem> 
+              <MenuItem value="" disabled>
+                <em>Select a Category</em>
+              </MenuItem>
               {dialogCategories.map((cat) => (
                 <MenuItem key={cat._id} value={cat._id}>
                   {cat.name}
                 </MenuItem>
               ))}
             </TextField>
-
             <TextField
               label="Name"
               name="name"
@@ -759,16 +780,20 @@ const ItemManagement = () => {
               fullWidth
               required
               multiline
-              rows={3} 
+              rows={3}
               error={!!formErrors.description}
               helperText={formErrors.description}
               disabled={isSubmitting}
               size="small"
             />
-
             {/* Image Upload Field */}
             <Box>
-              <Typography variant="subtitle2" gutterBottom component="label" htmlFor="item-image-upload">
+              <Typography
+                variant="subtitle2"
+                gutterBottom
+                component="label"
+                htmlFor="item-image-upload"
+              >
                 Item Image (Optional, max 5MB)
               </Typography>
               <TextField
@@ -781,33 +806,56 @@ const ItemManagement = () => {
                 size="small"
                 sx={{ mt: 0.5 }}
                 error={!!formErrors.image}
-                helperText={formErrors.image || (isUploading ? `Uploading: ${uploadProgress.toFixed(0)}%` : '')}
+                helperText={
+                  formErrors.image ||
+                  (isUploading
+                    ? `Uploading: ${uploadProgress.toFixed(0)}%`
+                    : "")
+                }
                 disabled={isSubmitting || isUploading}
                 InputLabelProps={{ shrink: true }} // Keep label floated
               />
               {/* Image Preview */}
-              {form.image && !isUploading && ( // Show preview if URL exists and not currently uploading
-                <Box mt={1.5} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <img
-                    src={form.image}
-                    alt="Image Preview"
-                    style={{ maxHeight: 60, maxWidth: 60, borderRadius: 4, objectFit: 'cover' }}
-                  />
-                  <Typography variant="caption">Current Image</Typography>
-                   {/* Add button to remove image */}
-                  <Button size="small" color="error" onClick={() => setForm(prev => ({ ...prev, image: null}))} disabled={isSubmitting}>
+              {form.image &&
+                !isUploading && ( // Show preview if URL exists and not currently uploading
+                  <Box
+                    mt={1.5}
+                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                  >
+                    <img
+                      src={form.image}
+                      alt="Image Preview"
+                      style={{
+                        maxHeight: 200,
+                        maxWidth: 200,
+                        borderRadius: 4,
+                        objectFit: "cover",
+                      }}
+                    />
+                    <Typography variant="caption">Current Image</Typography>
+                    {/* Add button to remove image */}
+                    <Button
+                      size="small"
+                      color="error"
+                      onClick={() =>
+                        setForm((prev) => ({ ...prev, image: null }))
+                      }
+                      disabled={isSubmitting}
+                    >
                       Remove
-                  </Button>
+                    </Button>
+                  </Box>
+                )}
+              {/* Show progress bar during upload */}
+              {isUploading && (
+                <Box sx={{ width: "100%", mt: 1 }}>
+                  <LinearProgress
+                    variant="determinate"
+                    value={uploadProgress}
+                  />
                 </Box>
               )}
-               {/* Show progress bar during upload */}
-               {isUploading && (
-                 <Box sx={{ width: '100%', mt: 1 }}>
-                   <LinearProgress variant="determinate" value={uploadProgress} />
-                 </Box>
-               )}
             </Box>
-
             <TextField
               label="Price"
               name="price"
@@ -821,8 +869,10 @@ const ItemManagement = () => {
               disabled={isSubmitting}
               size="small"
               InputProps={{
-                startAdornment: <InputAdornment position="start">$</InputAdornment>,
-                inputProps: { step: "0.01", min: "0" } // Allow decimals, prevent negative
+                startAdornment: (
+                  <InputAdornment position="start">$</InputAdornment>
+                ),
+                inputProps: { step: "0.01", min: "0" }, // Allow decimals, prevent negative
               }}
             />
             <TextField
@@ -836,7 +886,7 @@ const ItemManagement = () => {
               size="small"
             >
               {/* Ensure values match backend expectations */}
-              {["Active", "Inactive"].map((opt) => (
+              {["active", "inactive"].map((opt) => (
                 <MenuItem key={opt} value={opt}>
                   {opt}
                 </MenuItem>
@@ -844,22 +894,31 @@ const ItemManagement = () => {
             </TextField>
           </Box>
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}> {/* Add padding */}
-          <Button onClick={handleCloseDialog} disabled={isSubmitting || isUploading}>Cancel</Button>
+        <DialogActions sx={{ p: 2 }}>
+          {" "}
+          {/* Add padding */}
           <Button
-              variant="contained"
-              onClick={handleSubmit}
-              disabled={isSubmitting || isUploading} // Disable while submitting or uploading
-            >
-              {isSubmitting ? (
-                <>
-                  <CircularProgress size={20} sx={{ mr: 1 }} color="inherit"/>
-                  {editingItem ? "Updating..." : "Adding..."}
-                 </>
-              ) : (
-                editingItem ? "Update Item" : "Add Item"
-              )}
-            </Button>
+            onClick={handleCloseDialog}
+            disabled={isSubmitting || isUploading}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSubmit}
+            disabled={isSubmitting || isUploading} // Disable while submitting or uploading
+          >
+            {isSubmitting ? (
+              <>
+                <CircularProgress size={20} sx={{ mr: 1 }} color="inherit" />
+                {editingItem ? "Updating..." : "Adding..."}
+              </>
+            ) : editingItem ? (
+              "Update Item"
+            ) : (
+              "Add Item"
+            )}
+          </Button>
         </DialogActions>
       </Dialog>
 
