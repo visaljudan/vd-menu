@@ -207,7 +207,6 @@ export default function BusinessManagement() {
       }
     });
 
-    console.log("formState: ", formState);
     try {
       if (editingBusiness) {
         await api.patch(`api/v1/businesses/${editingBusiness._id}`, formState);

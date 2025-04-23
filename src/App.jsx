@@ -24,6 +24,7 @@ import TelegramManagement from "./pages/client/TelegramManagement";
 import ItemManagement from "./pages/client/ItemManagement";
 import StoreToken from "./api/StoreToken";
 import ItemDetailPage from "./pages/customer/ItemDetailPage";
+import MenuPage from "./pages/customer/MenuPage";
 
 const App = () => {
   return (
@@ -38,8 +39,8 @@ const App = () => {
           <Route path="/signup" element={<SignUpPage />} />
           <Route path="/Signin" element={<SignInPage />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/card-page" element={<CartPage />} />
           <Route path="/subscription-Plan" element={<SubscriptionPlan />} />
+          <Route path="/menu/:id" element={<MenuPage />} />
           <Route path="/ItemDetail-Page" element={<ItemDetailPage />} />
 
           {/* Client */}
