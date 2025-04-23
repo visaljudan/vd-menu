@@ -23,6 +23,7 @@ import Dashboard from "./pages/client/Dashboard";
 import TelegramManagement from "./pages/client/TelegramManagement";
 import ItemManagement from "./pages/client/ItemManagement";
 import StoreToken from "./api/StoreToken";
+import ItemDetailPage from "./pages/customer/ItemDetailPage";
 
 const App = () => {
   return (
@@ -39,6 +40,7 @@ const App = () => {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/card-page" element={<CartPage />} />
           <Route path="/subscription-Plan" element={<SubscriptionPlan />} />
+          <Route path="/ItemDetail-Page" element={<ItemDetailPage />} />
 
           {/* Client */}
           <Route path="/client/dashboard" element={<Dashboard />} />
