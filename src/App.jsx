@@ -41,7 +41,7 @@ const App = () => {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/subscription-Plan" element={<SubscriptionPlan />} />
           <Route path="/menu/:id" element={<MenuPage />} />
-          <Route path="/ItemDetail-Page" element={<ItemDetailPage />} />
+          <Route path="/item/:id" element={<ItemDetailPage />} />
 
           {/* Client */}
           <Route path="/client/dashboard" element={<Dashboard />} />

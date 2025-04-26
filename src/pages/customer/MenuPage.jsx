@@ -15,6 +15,7 @@ import { useParams } from "react-router-dom";
 import api from "../../api/axiosConfig";
 import { useSelector } from "react-redux";
 import Loading from "../../components/Loading";
+import { Link } from 'react-router-dom';
 
 const MenuPage = () => {
   const { currentUser } = useSelector((state) => state.user);
@@ -196,7 +197,12 @@ const MenuPage = () => {
                         <Button variant="contained" fullWidth>
                           Add to Cart
                         </Button>
-                        <Button variant="outlined" fullWidth>
+                        <Button 
+                          variant="outlined" 
+                          fullWidth
+                          component={Link}
+                          to={`/item/${item._id}`}
+                        >
                           View Item
                         </Button>
                       </Box>
