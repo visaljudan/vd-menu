@@ -10,16 +10,18 @@ import {
   Button,
   Chip,
   Divider,
-  Rating,
   Container,
   IconButton,
-  CircularProgress
+  CircularProgress,
+  Stack
 } from '@mui/material';
 import {
   ShoppingCart,
   FavoriteBorder,
   Favorite,
-  ArrowBack
+  ArrowBack,
+  Info,
+  LocalOffer
 } from '@mui/icons-material';
 import api from "../../api/axiosConfig";
 
@@ -29,13 +31,37 @@ const ItemDetailPage = () => {
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [categoryName, setCategoryName] = useState('');
+  const [businessName, setBusinessName] = useState('');
 
   useEffect(() => {
     const fetchItem = async () => {
       try {
         setLoading(true);
-        const response = await api.get(`/items/${id}`);
-        setItem(response.data.data);
+        const response = await api.get(`api/v1/items/${id}`);
+        const itemData = response.data.data;
+        setItem(itemData);
+        
+        // // Fetch category name if categoryId exists
+        // if (itemData.categoryId) {
+        //   try {
+        //     const categoryResponse = await api.get(`/api/v1/items/${itemData.categoryId}`);
+        //     setCategoryName(categoryResponse.data.data.name || '');
+        //   } catch (categoryError) {
+        //     console.error("Error fetching category:", categoryError);
+        //   }
+        // }
+        
+        // // Fetch business name if businessId exists
+        // if (itemData.businessId) {
+        //   try {
+        //     const businessResponse = await api.get(`api/v1/items/${itemData.businessId}`);
+        //     setBusinessName(businessResponse.data.data.name || '');
+        //   } catch (businessError) {
+        //     console.error("Error fetching business:", businessError);
+        //   }
+        // }
+        
         setError(null);
       } catch (err) {
         console.error("Error fetching item:", err);
@@ -90,6 +116,19 @@ const ItemDetailPage = () => {
     );
   }
 
+  // Determine status display
+  const getStatusDisplay = (status) => {
+    const statusMap = {
+      active: { text: 'In Stock', color: 'success' },
+      inactive: { text: 'Out of Stock', color: 'error' },
+      discontinued: { text: 'Discontinued', color: 'warning' },
+      preorder: { text: 'Pre-Order', color: 'info' }
+    };
+    return statusMap[status.toLowerCase()] || { text: 'Unknown', color: 'default' };
+  };
+
+  const statusInfo = getStatusDisplay(item.status);
+
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Button 
@@ -133,23 +172,16 @@ const ItemDetailPage = () => {
                 </IconButton>
               </Box>
               
-              {/* <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Rating value={item.rating} precision={0.5} readOnly />
-                <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-                  ({item.reviews} reviews)
-                </Typography>
-              </Box> */}
-              
               <Typography variant="h5" component="div" sx={{ mb: 2 }}>
                 ${item.price.toFixed(2)}
               </Typography>
               
-              {/* <Chip 
-                label={item.inStock ? 'In Stock' : 'Out of Stock'} 
-                color={item.inStock ? 'success' : 'error'} 
+              <Chip 
+                label={statusInfo.text} 
+                color={statusInfo.color} 
                 size="small" 
                 sx={{ mb: 3 }}
-              /> */}
+              />
               
               <Typography variant="body1" paragraph sx={{ mb: 3 }}>
                 {item.description}
@@ -157,45 +189,57 @@ const ItemDetailPage = () => {
               
               <Divider sx={{ my: 2 }} />
               
-              {item.colors && item.colors.length > 0 && (
+              {/* Tags section */}
+              {item.tags && item.tags.length > 0 && (
                 <Box sx={{ mb: 3 }}>
-                  <Typography variant="subtitle1" gutterBottom>
-                    Colors:
+                  <Typography variant="subtitle1" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <LocalOffer fontSize="small" /> Tags
                   </Typography>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    {item.colors.map(color => (
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {item.tags.map((tag, index) => (
                       <Chip 
-                        key={color} 
-                        label={color} 
-                        variant="outlined" 
+                        key={index} 
+                        label={tag} 
                         size="small"
+                        variant="outlined"
                       />
                     ))}
-                  </Box>
+                  </Stack>
                 </Box>
               )}
               
-              {item.features && item.features.length > 0 && (
+              {/* Additional info from meta */}
+              {item.meta?.additionalInfo && (
                 <Box sx={{ mb: 3 }}>
-                  <Typography variant="subtitle1" gutterBottom>
-                    Features:
+                  <Typography variant="subtitle1" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Info fontSize="small" /> Additional Information
                   </Typography>
-                  <ul style={{ margin: 0, paddingLeft: 20 }}>
-                    {item.features.map((feature, index) => (
-                      <li key={index}>
-                        <Typography variant="body2">{feature}</Typography>
-                      </li>
-                    ))}
-                  </ul>
+                  <Typography variant="body2">
+                    {item.meta.additionalInfo}
+                  </Typography>
                 </Box>
               )}
+              
+              {/* Category and Business info */}
+              <Box sx={{ mb: 3 }}>
+                {categoryName && (
+                  <Typography variant="body2" paragraph>
+                    <strong>Category:</strong> {categoryName}
+                  </Typography>
+                )}
+                {businessName && (
+                  <Typography variant="body2">
+                    <strong>Business:</strong> {businessName}
+                  </Typography>
+                )}
+              </Box>
               
               <Box sx={{ display: 'flex', gap: 2, mt: 4 }}>
                 <Button 
                   variant="contained" 
                   size="large" 
                   startIcon={<ShoppingCart />}
-                  disabled={!item.inStock}
+                  disabled={item.status !== 'active'}
                   sx={{ flexGrow: 1 }}
                 >
                   Add to Cart
@@ -211,16 +255,17 @@ const ItemDetailPage = () => {
         <Typography variant="h6" gutterBottom>
           Product Details
         </Typography>
-        {item.category && (
+        <Typography variant="body2" color="text.secondary" paragraph>
+          <strong>Status:</strong> {item.status}
+        </Typography>
           <Typography variant="body2" color="text.secondary" paragraph>
-            Category: {item.category}
+            <strong>Business ID:</strong> {item.businessId.name}
           </Typography>
-        )}
-        {item.additionalDetails && (
+        
           <Typography variant="body2" color="text.secondary">
-            {item.additionalDetails}
+            <strong>Category ID:</strong> {item.categoryId.name}
           </Typography>
-        )}
+
       </Box>
     </Container>
   );
