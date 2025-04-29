@@ -71,7 +71,7 @@ const MenuPage = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await api.get(`api/v1/items?userId=${user._id}`);
+      const response = await api.get(`api/v1/items?businessId=${id}`);
       setItems(response.data.data || []);
     } catch (err) {
       console.error("Error fetching items:", err);
@@ -121,6 +121,7 @@ const MenuPage = () => {
     );
   }
 
+  console.log(filteredItems);
   return (
     <Box>
       <Box sx={{ position: "relative", textAlign: "center", mb: 2 }}>
@@ -178,11 +179,7 @@ const MenuPage = () => {
         {error && <Alert severity="error">{error}</Alert>}
 
         <Grid container spacing={2}>
-          {filteredItems?.length === 0 ? (
-            <Typography align="center" variant="h6" sx={{ mt: 4 }}>
-              No items found in this category.
-            </Typography>
-          ) : (
+          {filteredItems?.length > 0 ? (
             filteredItems.data?.map((item) => (
               <Grid key={item._id} item xs={12} sm={6} md={5}>
                 <Card
@@ -225,6 +222,10 @@ const MenuPage = () => {
                 </Card>
               </Grid>
             ))
+          ) : (
+            <Typography align="center" variant="h6" sx={{ mt: 4 }}>
+              No items found in this category.
+            </Typography>
           )}
         </Grid>
 
