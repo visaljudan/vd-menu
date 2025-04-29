@@ -1,120 +1,3 @@
-// import React, { useState, useEffect } from 'react';
-// import {
-//   Card,
-//   CardMedia,
-//   CardContent,
-//   Typography,
-//   Chip,
-//   Box,
-//   CircularProgress,
-//   Button
-// } from '@mui/material';
-// import api from "../../api/axiosConfig";
-
-// const ItemCard = () => {
-//   const [items, setItems] = useState([]);
-//   const [loading, setLoading] = useState(true);
-//   const [error, setError] = useState(null);
-
-//   useEffect(() => {
-//     const fetchItems = async () => {
-//       try {
-//         const response = await api.get('/api/v1/items');
-//         setItems(response.data.data);
-//          // Assuming the data is in response.data.data
-//       } catch (err) {
-//         setError(err.message);
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     fetchItems();
-//   }, []);
-
-//   if (loading) {
-//     return (
-//       <Box display="flex" justifyContent="center" mt={4}>
-//         <CircularProgress />
-//       </Box>
-//     );
-//   }
-
-//   if (error) {
-//     return (
-//       <Box display="flex" justifyContent="center" mt={4}>
-//         <Typography color="error">Error: {error}</Typography>
-//       </Box>
-//     );
-//   }
-
-//   return (
-//     <Box sx={{ padding: 3, maxWidth: 800, margin: '0 auto' }}>
-//         <Typography variant="h4" component="h1" gutterBottom sx={{ textAlign: 'Left', mb: 4 }}>
-//           Menu
-//         </Typography>
-//         <Box sx={{ display: 'flex', gap: 2, mt: 4 }}>
-//         <Typography variant="h5" component="h2" gutterBottom sx={{ borderBottom: '1px solid #ddd', pb: 1, mb: 2 }}>
-//           Category
-//         </Typography>
-
-//         <Typography variant="h5" component="h2" gutterBottom sx={{ borderBottom: '1px solid #ddd', pb: 1, mb: 2 }}>
-//           Business
-//         </Typography>
-//     </Box>
-//     <Box display="flex" flexWrap="wrap" gap={3} p={2}>
-//       {items.data.map((item) => (  // Changed from items.data.map to items.map
-//         <Card key={item.id} sx={{ maxWidth: 200, width: '100%' }}>
-//           <CardMedia
-//             component="img"
-//             height="190"
-//             image={item.image || '/placeholder-image.jpg'}
-//             alt={item.name}
-//           />
-//           <CardContent>
-//             <Typography gutterBottom variant="h6" component="h3">
-//               {item.name}
-//             </Typography>
-//             <Typography  variant="body2" color="text.secondary" gutterBottom>
-//               {item.description}
-//             </Typography>
-
-//             {/* <Box display="flex" justifyContent="space-between" mb={1}>
-//               <Typography variant="body2" color="text.secondary">
-//                 Category: {item.categoryId.name || item.category_Id || 'N/A'}
-//               </Typography>
-//               <Typography variant="body2" color="text.secondary">
-//                 Business: {item.business?.name || item.business_Id || 'N/A'}
-//               </Typography>
-//             </Box> */}
-
-//             {/* <Box display="flex" justifyContent="space-between" alignItems="center">
-//               <Typography variant="h6" color="primary">
-//                 ${item.price?.toFixed(2)}
-//               </Typography>
-//               <Chip
-//                 label={item.status}
-//                 color={
-//                   item.status === 'active' ? 'success' :
-//                   item.status === 'pending' ? 'warning' : 'error'
-//                 }
-//                 size="small"
-//               />
-//             </Box> */}
-//             <Box sx={{ p: 3, textAlign: 'center',  }}>
-//                 <Button variant="contained" size="small">
-//                   + ORDER NOW
-//                 </Button>
-//               </Box>
-//           </CardContent>
-//         </Card>
-//       ))}
-//     </Box>
-//     </Box>
-//   );
-// };
-
-// export default ItemCard;
 import React from "react";
 import {
   Box,
@@ -126,99 +9,320 @@ import {
   CardContent,
   CardMedia,
   IconButton,
+  Paper,
+  Divider,
+  Badge,
+  Avatar,
+  Chip,
 } from "@mui/material";
-import { useCart } from "../../contexts/CartContext"; // Make sure path is correct
+import { useCart } from "../../contexts/CartContext";
 import DeleteIcon from "@mui/icons-material/Delete";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
+import LocalShippingIcon from "@mui/icons-material/LocalShipping";
+import AddIcon from "@mui/icons-material/Add";
+import RemoveIcon from "@mui/icons-material/Remove";
 
 const CartPage = () => {
-  const { cartItems, removeFromCart, clearCart } = useCart();
+  const { cartItems, removeFromCart, clearCart, updateQuantity } = useCart();
 
   const totalPrice = cartItems.reduce(
     (acc, item) => acc + item.price * item.quantity,
     0
   );
 
-  return (
-    <Container sx={{ mt: 6 }}>
-      <Typography variant="h4" fontWeight="bold" gutterBottom>
-        Your Cart
-      </Typography>
+  const handleIncreaseQuantity = (itemId) => {
+    const item = cartItems.find(item => item._id === itemId);
+    if (item) {
+      updateQuantity(itemId, item.quantity + 1);
+    }
+  };
 
-      {cartItems.length === 0 ? (
-        <Typography variant="h6" align="center" sx={{ mt: 10 }}>
-          Your cart is empty.
-        </Typography>
-      ) : (
-        <>
-          <Grid container spacing={2}>
-            {cartItems.map((item) => (
-              <Grid key={item._id} item xs={12} sm={6} md={4}>
-                <Card
-                  sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    height: "100%",
+  const handleDecreaseQuantity = (itemId) => {
+    const item = cartItems.find(item => item._id === itemId);
+    if (item && item.quantity > 1) {
+      updateQuantity(itemId, item.quantity - 1);
+    }
+  };
+
+  return (
+    <Container maxWidth="lg" sx={{ py: 6 }}>
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          p: 3, 
+          borderRadius: 4,
+          background: "linear-gradient(145deg, #f9f9f9 0%, #f3f3f3 100%)",
+          boxShadow: "0 8px 40px rgba(0,0,0,0.05)"
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", mb: 4 }}>
+          <Button
+            startIcon={<ArrowBackIcon />}
+            sx={{ 
+              mr: 2,
+              color: "text.primary",
+              "&:hover": {
+                backgroundColor: "rgba(0,0,0,0.03)",
+              }
+            }}
+            onClick={() => window.history.back()}
+          >
+            Continue Shopping
+          </Button>
+          <Typography variant="h4" fontWeight="700" color="primary" sx={{ flexGrow: 1 }}>
+            Your Cart
+          </Typography>
+          <Badge badgeContent={cartItems.length} color="primary" sx={{ mr: 1 }}>
+            <ShoppingCartIcon color="primary" />
+          </Badge>
+        </Box>
+
+        <Divider sx={{ mb: 4 }} />
+
+        {cartItems.length === 0 ? (
+          <Box sx={{ 
+            textAlign: "center", 
+            py: 8,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 3
+          }}>
+            <Avatar sx={{ width: 80, height: 80, backgroundColor: "rgba(25, 118, 210, 0.1)" }}>
+              <ShoppingCartIcon sx={{ fontSize: 40, color: "primary.main" }} />
+            </Avatar>
+            <Typography variant="h5" color="text.secondary">
+              Your cart is empty
+            </Typography>
+            <Button 
+              variant="contained" 
+              startIcon={<ArrowBackIcon />}
+              onClick={() => window.history.back()}
+              sx={{ mt: 2 }}
+            >
+              Start Shopping
+            </Button>
+          </Box>
+        ) : (
+          <>
+            <Box sx={{ display: { xs: "none", md: "flex" }, mb: 2, px: 2 }}>
+              <Grid container>
+                <Grid item md={6}>
+                  <Typography variant="subtitle1" fontWeight="bold">Product</Typography>
+                </Grid>
+                <Grid item md={2} sx={{ textAlign: "center" }}>
+                  <Typography variant="subtitle1" fontWeight="bold">Price</Typography>
+                </Grid>
+                <Grid item md={2} sx={{ textAlign: "center" }}>
+                  <Typography variant="subtitle1" fontWeight="bold">Quantity</Typography>
+                </Grid>
+                <Grid item md={2} sx={{ textAlign: "right" }}>
+                  <Typography variant="subtitle1" fontWeight="bold">Total</Typography>
+                </Grid>
+              </Grid>
+            </Box>
+
+            <Paper 
+              elevation={0}
+              sx={{ 
+                mb: 4, 
+                borderRadius: 2,
+                overflow: "hidden",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.05)"
+              }}
+            >
+              {cartItems.map((item, index) => (
+                <React.Fragment key={item._id}>
+                  <Box sx={{ p: 2 }}>
+                    <Grid container spacing={2} alignItems="center">
+                      <Grid item xs={12} md={6}>
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          <Box
+                            sx={{
+                              width: 80,
+                              height: 80,
+                              borderRadius: 2,
+                              overflow: "hidden",
+                              mr: 2,
+                              flexShrink: 0,
+                              boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+                            }}
+                          >
+                            <CardMedia
+                              component="img"
+                              height="80"
+                              image={item.image || "https://via.placeholder.com/80"}
+                              alt={item.name}
+                              sx={{ objectFit: "cover", height: "100%" }}
+                            />
+                          </Box>
+                          <Box>
+                            <Typography variant="h6" sx={{ mb: 0.5, fontWeight: 600 }}>
+                              {item.name}
+                            </Typography>
+                            <Chip 
+                              label="In Stock" 
+                              size="small" 
+                              sx={{ 
+                                height: 24, 
+                                backgroundColor: "success.light",
+                                color: "success.dark",
+                                fontWeight: 500,
+                                fontSize: "0.75rem"
+                              }} 
+                            />
+                          </Box>
+                        </Box>
+                      </Grid>
+                      
+                      <Grid item xs={4} md={2} sx={{ textAlign: { xs: "left", md: "center" } }}>
+                        <Typography sx={{ color: "text.secondary", display: { xs: "block", md: "none" } }}>
+                          Price:
+                        </Typography>
+                        <Typography fontWeight="medium">${item.price.toFixed(2)}</Typography>
+                      </Grid>
+                      
+                      <Grid item xs={4} md={2} sx={{ textAlign: { xs: "left", md: "center" } }}>
+                        <Typography sx={{ color: "text.secondary", display: { xs: "block", md: "none" }, mb: 1 }}>
+                          Quantity:
+                        </Typography>
+                        <Box sx={{ display: "inline-flex", alignItems: "center", border: "1px solid", borderColor: "divider", borderRadius: 1 }}>
+                          <IconButton 
+                            size="small" 
+                            onClick={() => handleDecreaseQuantity(item._id)}
+                            disabled={item.quantity <= 1}
+                            sx={{ p: 0.5 }}
+                          >
+                            <RemoveIcon fontSize="small" />
+                          </IconButton>
+                          <Typography sx={{ px: 2, py: 0.5, minWidth: 30, textAlign: "center" }}>
+                            {item.quantity}
+                          </Typography>
+                          <IconButton 
+                            size="small" 
+                            onClick={() => handleIncreaseQuantity(item._id)}
+                            sx={{ p: 0.5 }}
+                          >
+                            <AddIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      </Grid>
+                      
+                      <Grid item xs={4} md={2} sx={{ textAlign: { xs: "left", md: "right" } }}>
+                        <Typography sx={{ color: "text.secondary", display: { xs: "block", md: "none" } }}>
+                          Total:
+                        </Typography>
+                        <Box sx={{ display: "flex", justifyContent: { xs: "space-between", md: "flex-end" }, alignItems: "center" }}>
+                          <Typography fontWeight="bold" color="primary.main">
+                            ${(item.price * item.quantity).toFixed(2)}
+                          </Typography>
+                          <IconButton
+                            color="error"
+                            onClick={() => removeFromCart(item._id)}
+                            size="small"
+                            sx={{ ml: 1 }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      </Grid>
+                    </Grid>
+                  </Box>
+                  {index < cartItems.length - 1 && <Divider />}
+                </React.Fragment>
+              ))}
+            </Paper>
+
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", md: "row" },
+                justifyContent: "space-between",
+                gap: 4,
+                mt: 4,
+              }}
+            >
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="h6" gutterBottom fontWeight="bold">
+                  Order Notes
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph sx={{ mb: 3 }}>
+                  Add special instructions for your order
+                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                  <LocalShippingIcon color="primary" sx={{ mr: 1 }} />
+                  <Typography variant="body2">
+                    Free shipping on orders over $50
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 3,
+                  borderRadius: 2,
+                  backgroundColor: "rgba(25, 118, 210, 0.04)",
+                  border: "1px solid",
+                  borderColor: "primary.light",
+                  width: { xs: "100%", md: "320px" },
+                }}
+              >
+                <Typography variant="h6" gutterBottom fontWeight="bold">
+                  Order Summary
+                </Typography>
+                
+                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                  <Typography color="text.secondary">Subtotal</Typography>
+                  <Typography fontWeight="medium">${totalPrice.toFixed(2)}</Typography>
+                </Box>
+                
+                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                  <Typography color="text.secondary">Shipping</Typography>
+                  <Typography fontWeight="medium">Free</Typography>
+                </Box>
+                
+                <Divider sx={{ my: 2 }} />
+                
+                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
+                  <Typography variant="h6" fontWeight="bold">Total</Typography>
+                  <Typography variant="h6" fontWeight="bold" color="primary.main">
+                    ${totalPrice.toFixed(2)}
+                  </Typography>
+                </Box>
+                
+                <Button
+                  variant="contained"
+                  fullWidth
+                  size="large"
+                  sx={{ 
+                    mb: 2,
+                    py: 1.5,
+                    fontWeight: "bold",
+                    boxShadow: "0 4px 12px rgba(25, 118, 210, 0.3)",
+                    "&:hover": {
+                      boxShadow: "0 6px 16px rgba(25, 118, 210, 0.4)",
+                    }
                   }}
                 >
-                  <CardMedia
-                    component="img"
-                    height="200"
-                    image={item.image}
-                    alt={item.name}
-                    sx={{ objectFit: "cover" }}
-                  />
-                  <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6">{item.name}</Typography>
-                    <Typography color="text.secondary">
-                      ${item.price.toFixed(2)} x {item.quantity}
-                    </Typography>
-                    <Typography sx={{ mt: 1 }}>
-                      Total: ${(item.price * item.quantity).toFixed(2)}
-                    </Typography>
-
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "flex-end",
-                        mt: 2,
-                      }}
-                    >
-                      <IconButton
-                        color="error"
-                        onClick={() => removeFromCart(item._id)}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-
-          <Box
-            sx={{
-              mt: 4,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 2,
-            }}
-          >
-            <Typography variant="h5">
-              Total: ${totalPrice.toFixed(2)}
-            </Typography>
-            <Box sx={{ display: "flex", gap: 2 }}>
-              <Button variant="outlined" color="error" onClick={clearCart}>
-                Clear Cart
-              </Button>
-              <Button variant="contained" color="primary">
-                Proceed to Checkout
-              </Button>
+                  Proceed to Checkout
+                </Button>
+                
+                <Button
+                  variant="outlined"
+                  color="error"
+                  fullWidth
+                  onClick={clearCart}
+                  sx={{ fontWeight: "medium" }}
+                >
+                  Clear Cart
+                </Button>
+              </Paper>
             </Box>
-          </Box>
-        </>
-      )}
+          </>
+        )}
+      </Paper>
     </Container>
   );
 };

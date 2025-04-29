@@ -23,78 +23,84 @@ import {
   CircularProgress,
   Alert,
   InputAdornment,
-  LinearProgress, // Added for price input
+  LinearProgress,
+  Avatar,
+  Card,
+  CardContent,
+  Divider,
+  Grid,
+  useTheme
 } from "@mui/material";
-import { Edit, Add, Close } from "@mui/icons-material";
+import { Edit, Add, Close, CloudUpload } from "@mui/icons-material";
 import DeleteTwoToneIcon from "@mui/icons-material/DeleteTwoTone";
 import { Helmet } from "react-helmet";
 import MainLayout from "../../layouts/MainLayout";
 import { useSelector } from "react-redux";
-import api from "../../api/axiosConfig"; // Ensure this is configured with base URL and potentially auth interceptors
+import api from "../../api/axiosConfig";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { storage } from "../../firebase"; // Ensure Firebase storage is initialized
+import { storage } from "../../firebase";
 
-// Confirmation Dialog Component (remains the same)
 const ConfirmDialog = ({ message, onConfirm, onClose, open }) => (
-  <Dialog open={open} onClose={onClose}>
-    <DialogTitle>Confirmation</DialogTitle>
-    <DialogContent>
-      <Typography>{message}</Typography>{" "}
-      {/* Use Typography for consistent styling */}
+  <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+    <DialogTitle sx={{ bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider' }}>
+      Confirm Deletion
+    </DialogTitle>
+    <DialogContent sx={{ p: 3 }}>
+      <Typography variant="body1">{message}</Typography>
     </DialogContent>
-    <DialogActions>
-      <Button onClick={onClose}>Cancel</Button>
+    <DialogActions sx={{ p: 2, bgcolor: 'background.default' }}>
+      <Button onClick={onClose} variant="outlined" color="inherit">
+        Cancel
+      </Button>
       <Button variant="contained" color="error" onClick={onConfirm}>
-        Confirm
+        Delete
       </Button>
     </DialogActions>
   </Dialog>
 );
 
-// Initial form state constant
 const initialFormState = {
   name: "",
   description: "",
-  businessId: "", // Added businessId
+  businessId: "",
   category: "",
   image: null,
   price: "",
-  status: "Active",
+  status: "active",
 };
 
 const ItemManagement = () => {
+  const theme = useTheme();
   const { currentUser } = useSelector((state) => state.user);
-  const user = currentUser?.user; // Assuming user object has _id
-  const token = currentUser?.token; // Token for authenticated requests
+  const user = currentUser?.user;
+  const token = currentUser?.token;
 
   const title = "Item Management";
   const [items, setItems] = useState([]);
   const [businesses, setBusinesses] = useState([]);
-  const [categories, setCategories] = useState([]); // Categories for the form dropdown
-  const [dialogCategories, setDialogCategories] = useState([]); // Separate state for dialog categories
+  const [categories, setCategories] = useState([]);
+  const [dialogCategories, setDialogCategories] = useState([]);
   const [totalItems, setTotalItems] = useState(0);
   const [pageNumber, setPageNumber] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
-  const [open, setOpen] = useState(false); // Dialog open state
-  const [confirmOpen, setConfirmOpen] = useState(false); // Delete confirmation dialog
-  const [deleteId, setDeleteId] = useState(null); // ID of item to delete
-  const [editingItem, setEditingItem] = useState(null); // Item being edited (_id included)
+  const [open, setOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
+  const [editingItem, setEditingItem] = useState(null);
   const [form, setForm] = useState(initialFormState);
-  const [formErrors, setFormErrors] = useState({}); // State for form validation errors
-  const [isSubmitting, setIsSubmitting] = useState(false); // Loading state for form submission
-  const [isLoading, setIsLoading] = useState(false); // Loading state for fetching data
-  const [error, setError] = useState(null); // General error messages (e.g., fetch errors)
-  const [uploadProgress, setUploadProgress] = useState(0); // Image upload progress
-  const [isUploading, setIsUploading] = useState(false); // Image upload status
+  const [formErrors, setFormErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
 
   const [filters, setFilters] = useState({
     status: "All",
     business: "",
     category: "",
   });
-
-  // --- Data Fetching ---
 
   const fetchItems = useCallback(async () => {
     setIsLoading(true);
@@ -113,9 +119,7 @@ const ItemManagement = () => {
     );
 
     try {
-      const response = await api.get("/api/v1/items", {
-        params,
-      });
+      const response = await api.get("/api/v1/items", { params });
       const data = response.data.data;
       setItems(data.data || []);
       setTotalItems(data.total || 0);
@@ -128,14 +132,7 @@ const ItemManagement = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [
-    pageNumber,
-    pageSize,
-    searchQuery,
-    filters.business,
-    filters.category,
-    user._id,
-  ]);
+  }, [pageNumber, pageSize, searchQuery, filters.business, filters.category, user._id]);
 
   const fetchBusinesses = useCallback(async () => {
     try {
@@ -155,21 +152,16 @@ const ItemManagement = () => {
       return;
     }
     try {
-      const response = await api.get(
-        `/api/v1/categories?businessId=${businessId}`
-      );
+      const response = await api.get(`/api/v1/categories?businessId=${businessId}`);
       setDialogCategories(response.data.data.data || []);
     } catch (err) {
       setFormErrors((prev) => ({
         ...prev,
         category: "Could not load categories",
       }));
-      console.error("Failed to fetch categories for dialog:", err);
       setDialogCategories([]);
     }
   }, []);
-
-  // --- Effects ---
 
   useEffect(() => {
     fetchItems();
@@ -186,12 +178,9 @@ const ItemManagement = () => {
         return;
       }
       try {
-        const response = await api.get(
-          `/api/v1/categories?businessId=${businessId}`
-        );
+        const response = await api.get(`/api/v1/categories?businessId=${businessId}`);
         setCategories(response.data.data.data || []);
       } catch (err) {
-        console.error("Failed to fetch filter categories:", err);
         setCategories([]);
       }
     };
@@ -204,39 +193,32 @@ const ItemManagement = () => {
     setFilters((prev) => ({ ...prev, category: "" }));
   }, [filters.business]);
 
-  // Fetch categories for the *dialog form* when the business selection in the form changes
   useEffect(() => {
     if (form.businessId) {
       fetchCategoriesForBusiness(form.businessId);
     } else {
-      setDialogCategories([]); // Clear if business is deselected
+      setDialogCategories([]);
     }
   }, [form.businessId, fetchCategoriesForBusiness]);
-
-  // --- Form Handling ---
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => {
       const newState = { ...prev, [name]: value };
-      // If business changes, reset category
       if (name === "businessId") {
         newState.category = "";
       }
       return newState;
     });
-    // Clear validation error for the field being changed
     if (formErrors[name]) {
       setFormErrors((prev) => ({ ...prev, [name]: null }));
     }
   };
 
-  // Upload image to Firebase
   const uploadImage = async (file) => {
     if (!file) throw new Error("No file selected");
     setIsUploading(true);
     setUploadProgress(0);
-    // --- Ensure unique file names or handle collisions ---
     const storageRef = ref(storage, `vd-menu/${Date.now()}_${file.name}`);
     const uploadTask = uploadBytesResumable(storageRef, file);
 
@@ -252,20 +234,19 @@ const ItemManagement = () => {
           console.error("Firebase upload error:", error);
           setIsUploading(false);
           setUploadProgress(0);
-          reject(error); // Reject the promise on error
+          reject(error);
         },
         async () => {
           try {
             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            console.log("File available at", downloadURL);
             setIsUploading(false);
-            setUploadProgress(100); // Mark as complete
-            resolve(downloadURL); // Resolve the promise with the URL
+            setUploadProgress(100);
+            resolve(downloadURL);
           } catch (error) {
             console.error("Error getting download URL:", error);
             setIsUploading(false);
             setUploadProgress(0);
-            reject(error); // Reject if getting URL fails
+            reject(error);
           }
         }
       );
@@ -312,25 +293,23 @@ const ItemManagement = () => {
     if (!form.businessId) errors.businessId = "Business is required";
     if (!form.category) errors.category = "Category is required";
     if (!form.name.trim()) errors.name = "Name is required";
-    if (!form.description.trim())
-      errors.description = "Description is required";
+    if (!form.description.trim()) errors.description = "Description is required";
     const price = parseFloat(form.price);
-    if (isNaN(price) || price < 0)
-      errors.price = "Price must be a positive number";
-    // Image is optional, so no validation unless required
-    // if (!form.image) errors.image = "Image is required";
-
+    if (isNaN(price)) {
+      errors.price = "Price must be a number";
+    } else if (price < 0) {
+      errors.price = "Price cannot be negative";
+    }
     setFormErrors(errors);
-    return Object.keys(errors).length === 0; // Return true if no errors
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async () => {
-    setError(null); // Clear general errors
-    if (!validateForm()) return; // Stop if validation fails
+    setError(null);
+    if (!validateForm()) return;
 
     setIsSubmitting(true);
 
-    // Prepare data for API
     const itemData = {
       name: form.name.trim(),
       description: form.description.trim(),
@@ -344,34 +323,21 @@ const ItemManagement = () => {
     try {
       let response;
       if (editingItem) {
-        // --- !!! Ensure API uses _id in URL ---
-        response = await api.patch(
-          `/api/v1/items/${editingItem._id}`,
-          itemData
-        );
+        response = await api.patch(`/api/v1/items/${editingItem._id}`, itemData);
       } else {
         response = await api.post("/api/v1/items", itemData);
       }
 
-      setOpen(false); // Close dialog
+      setOpen(false);
       resetFormAndEditingState();
-      fetchItems(); // Refresh the list
+      fetchItems();
     } catch (err) {
-      console.error("Failed to save item:", err);
-      // Set error message based on API response or generic message
       const apiError = err.response?.data?.message || err.message;
-      setError(
-        // Show error in the main page area or dialog? Dialog might be better.
-        `Failed to save item: ${apiError}`
-      );
-      // Optionally set form-specific errors if the API returns field-level issues
-      // if (err.response?.data?.errors) { setFormErrors(err.response.data.errors); }
+      setError(`Failed to save item: ${apiError}`);
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  // --- Dialog and Edit/Delete Handling ---
 
   const handleEdit = (item) => {
     setEditingItem(item);
@@ -381,54 +347,47 @@ const ItemManagement = () => {
       businessId: item.businessId?._id || "",
       category: item.categoryId?._id || "",
       price: item.price?.toString() || "",
-      status: item.status || "Active",
-      image: item.image || null, // Pre-fill with existing image URL
+      status: item.status || "active",
+      image: item.image || null,
     });
-    setFormErrors({}); // Clear previous form errors
-    setError(null); // Clear general errors
-    // Categories for the selected business will be fetched by the useEffect watching form.businessId
-    setOpen(true); // Open the dialog
+    setFormErrors({});
+    setError(null);
+    setOpen(true);
   };
 
   const resetFormAndEditingState = () => {
     setForm(initialFormState);
     setEditingItem(null);
     setFormErrors({});
-    setError(null); // Clear general error too
-    setDialogCategories([]); // Clear categories in dialog
+    setError(null);
+    setDialogCategories([]);
     setUploadProgress(0);
     setIsUploading(false);
   };
 
   const handleDeleteRequest = (itemId) => {
-    // --- Ensure `item._id` is passed here ---
     setDeleteId(itemId);
     setConfirmOpen(true);
-    setError(null); // Clear errors before showing dialog
+    setError(null);
   };
 
   const handleDeleteConfirm = async () => {
     setError(null);
-    // Add loading state for delete action?
     try {
-      // --- Ensure API uses _id in URL ---
       await api.delete(`/api/v1/items/${deleteId}`);
       setConfirmOpen(false);
       setDeleteId(null);
 
-      // Optimistic UI update or refetch:
-      // Refetch is simpler unless dealing with large datasets/slow network
-      // Check if the deleted item was the last one on the current page
       if (items.length === 1 && pageNumber > 1) {
-        setPageNumber(pageNumber - 1); // Go to previous page if last item deleted
+        setPageNumber(pageNumber - 1);
       } else {
-        fetchItems(); // Otherwise, just refresh the current page
+        fetchItems();
       }
     } catch (err) {
       setError(
         `Failed to delete item: ${err.response?.data?.message || err.message}`
       );
-      setConfirmOpen(false); // Keep dialog closable even on error
+      setConfirmOpen(false);
     }
   };
 
@@ -442,14 +401,13 @@ const ItemManagement = () => {
     setOpen(true);
   };
 
-  // --- Pagination Handlers ---
   const handlePageChange = (event, newPage) => {
-    setPageNumber(newPage + 1); // Material UI pages are 0-indexed
+    setPageNumber(newPage + 1);
   };
 
   const handleRowsPerPageChange = (event) => {
     setPageSize(parseInt(event.target.value, 10));
-    setPageNumber(1); // Reset to first page when page size changes
+    setPageNumber(1);
   };
 
   const filteredItems = items?.filter((item) => {
@@ -466,469 +424,497 @@ const ItemManagement = () => {
   return (
     <MainLayout>
       <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-        {" "}
-        {/* Responsive padding */}
         <Helmet>
           <title>{title}</title>
         </Helmet>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center", // Align items vertically
-            flexWrap: "wrap", // Allow wrapping on smaller screens
-            mb: 3, // Increased margin bottom
-            gap: 2, // Add gap between title and button
-          }}
-        >
-          <Typography variant="h5" fontWeight="bold" component="h1">
-            {" "}
-            {/* Use h1 for semantic heading */}
-            {title}
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={handleOpenAddDialog}
-            disabled={isLoading || isSubmitting} // Disable when loading/submitting
-          >
-            Add Item
-          </Button>
-        </Box>
-        {/* General Error Alert */}
+        
+        {/* Header Section */}
+        <Card sx={{ mb: 3, boxShadow: theme.shadows[1] }}>
+          <CardContent>
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              <Typography variant="h5" fontWeight="600" color="text.primary">
+                {title}
+              </Typography>
+              <Button
+                variant="contained"
+                startIcon={<Add />}
+                onClick={handleOpenAddDialog}
+                disabled={isLoading || isSubmitting}
+                sx={{
+                  bgcolor: 'primary.main',
+                  '&:hover': { bgcolor: 'primary.dark' }
+                }}
+              >
+                Add Item
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+
+        {/* Error Alert */}
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+          <Alert 
+            severity="error" 
+            sx={{ mb: 3 }}
+            onClose={() => setError(null)}
+          >
             {error}
           </Alert>
         )}
-        {/* Filters */}
-        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 3 }}>
-          <TextField
-            placeholder="Search by Name..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            sx={{ flexGrow: 1, minWidth: "200px" }} // Allow search to grow
-            disabled={isLoading}
-            variant="outlined"
-            size="small"
-          />
-          <TextField
-            select
-            label="Filter by Business"
-            value={filters.business}
-            onChange={(e) => {
-              setFilters((prev) => ({
-                ...prev,
-                business: e.target.value,
-                category: "",
-              }));
-              setPageNumber(1);
-            }}
-            sx={{ width: 200 }}
-            disabled={isLoading || businesses.length === 0}
-            size="small"
-          >
-            <MenuItem value="">All Businesses</MenuItem>
-            {businesses?.map((b) => (
-              <MenuItem key={b._id} value={b._id}>
-                {b.name}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField
-            select
-            label="Filter by Category"
-            value={filters.category}
-            onChange={(e) => {
-              setFilters((prev) => ({ ...prev, category: e.target.value }));
-              setPageNumber(1);
-            }}
-            sx={{ width: 200 }}
-            disabled={isLoading || !filters.business || categories.length === 0}
-            size="small"
-          >
-            <MenuItem value="">All Categories</MenuItem>
-            {categories?.map((c) => (
-              <MenuItem key={c._id} value={c._id}>
-                {c.name}
-              </MenuItem>
-            ))}
-          </TextField>
-        </Box>
+
+        {/* Filter Section */}
+        <Card sx={{ mb: 3, boxShadow: theme.shadows[1] }}>
+          <CardContent>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth
+                  label="Search Items"
+                  variant="outlined"
+                  size="small"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  InputProps={{
+                    sx: { borderRadius: 1 }
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  select
+                  fullWidth
+                  label="Filter by Business"
+                  variant="outlined"
+                  size="small"
+                  value={filters.business}
+                  onChange={(e) => {
+                    setFilters((prev) => ({
+                      ...prev,
+                      business: e.target.value,
+                      category: "",
+                    }));
+                    setPageNumber(1);
+                  }}
+                  disabled={isLoading || businesses.length === 0}
+                >
+                  <MenuItem value="">All Businesses</MenuItem>
+                  {businesses?.map((b) => (
+                    <MenuItem key={b._id} value={b._id}>
+                      {b.name}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  select
+                  fullWidth
+                  label="Filter by Category"
+                  variant="outlined"
+                  size="small"
+                  value={filters.category}
+                  onChange={(e) => {
+                    setFilters((prev) => ({ ...prev, category: e.target.value }));
+                    setPageNumber(1);
+                  }}
+                  disabled={isLoading || !filters.business || categories.length === 0}
+                >
+                  <MenuItem value="">All Categories</MenuItem>
+                  {categories?.map((c) => (
+                    <MenuItem key={c._id} value={c._id}>
+                      {c.name}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+
         {/* Items Table */}
-        <TableContainer component={Paper} elevation={2}>
-          {" "}
-          {/* Add subtle shadow */}
-          <Table>
-            <TableHead sx={{ backgroundColor: "action.hover" }}>
-              {" "}
-              {/* Light grey header */}
-              <TableRow>
-                {/* Added Image column */}
-                <TableCell sx={{ width: "80px" }}>Image</TableCell>
-                <TableCell>Name</TableCell>
-                <TableCell>Category</TableCell>
-                <TableCell>Price</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell align="right">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {isLoading ? (
+        <Card sx={{ boxShadow: theme.shadows[1] }}>
+          <TableContainer>
+            <Table>
+              <TableHead sx={{ bgcolor: theme.palette.grey[100] }}>
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
-                    {" "}
-                    {/* Increase padding */}
-                    <CircularProgress size={30} sx={{ mr: 1 }} />
-                    <Typography variant="body1">Loading Items...</Typography>
-                  </TableCell>
+                  <TableCell sx={{ width: 80 }}>Image</TableCell>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Category</TableCell>
+                  <TableCell>Price</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell align="right">Actions</TableCell>
                 </TableRow>
-              ) : filteredItems?.length > 0 ? (
-                filteredItems.map((item) => (
-                  <TableRow key={item._id} hover>
-                    {" "}
-                    {/* Add hover effect */}
-                    {/* Image Cell */}
-                    <TableCell>
-                      <Box
-                        component="img"
-                        sx={{
-                          height: 40,
-                          width: 40,
-                          objectFit: "cover", // Crop image nicely
-                          borderRadius: 1, // Slightly rounded corners
-                          border: "1px solid",
-                          borderColor: "divider", // Use theme divider color
-                        }}
-                        alt={item.name || "Item image"}
-                        src={item.image || "/placeholder-image.png"} // Provide a fallback placeholder
-                        onError={(e) => {
-                          e.target.src = "/placeholder-image.png";
-                        }} // Handle broken images
-                      />
+              </TableHead>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                      <CircularProgress size={30} sx={{ mr: 1 }} />
+                      <Typography variant="body1">Loading Items...</Typography>
                     </TableCell>
-                    <TableCell sx={{ fontWeight: "medium" }}>
-                      {item.name}
-                    </TableCell>
-                    <TableCell>{item.categoryId?.name || "N/A"}</TableCell>{" "}
-                    {/* Handle missing category name */}
-                    <TableCell>${item.price?.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={item.status}
-                        color={item.status === "Active" ? "success" : "default"}
-                        size="small"
-                        sx={{ textTransform: "capitalize" }} // Capitalize status
-                      />
-                    </TableCell>
-                    <TableCell align="right">
-                      <Tooltip title="Edit">
-                        {/* Add span for Tooltip when IconButton is disabled */}
-                        <span>
+                  </TableRow>
+                ) : filteredItems?.length > 0 ? (
+                  filteredItems.map((item) => (
+                    <TableRow key={item._id} hover>
+                      <TableCell>
+                        <Avatar
+                          src={item.image}
+                          alt={item.name}
+                          sx={{ width: 48, height: 48 }}
+                          variant="rounded"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography fontWeight="medium">
+                          {item.name}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={item.categoryId?.name || "N/A"} 
+                          size="small" 
+                          color="secondary"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography color="text.secondary">
+                          ${item.price?.toFixed(2)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={item.status}
+                          color={item.status === "active" ? "success" : "default"}
+                          size="small"
+                          sx={{ textTransform: "capitalize" }}
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        <Tooltip title="Edit">
                           <IconButton
                             onClick={() => handleEdit(item)}
                             size="small"
-                            color="primary" // Use theme color
-                            disabled={isSubmitting} // Disable while another action is in progress
+                            color="primary"
+                            disabled={isSubmitting}
+                            sx={{ mr: 1 }}
                           >
                             <Edit fontSize="small" />
                           </IconButton>
-                        </span>
-                      </Tooltip>
-                      <Tooltip title="Delete">
-                        <span>
+                        </Tooltip>
+                        <Tooltip title="Delete">
                           <IconButton
-                            // --- Pass item._id to delete handler ---
                             onClick={() => handleDeleteRequest(item._id)}
                             size="small"
-                            color="error" // Use theme color
+                            color="error"
                             disabled={isSubmitting}
                           >
                             <DeleteTwoToneIcon fontSize="small" />
                           </IconButton>
-                        </span>
-                      </Tooltip>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                      <Typography variant="body1">
+                        No items found matching your criteria.
+                      </Typography>
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
-                    <Typography variant="body1">
-                      No items found matching your criteria.
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <TablePagination
+            component="div"
+            count={totalItems}
+            page={pageNumber - 1}
+            onPageChange={handlePageChange}
+            rowsPerPage={pageSize}
+            onRowsPerPageChange={handleRowsPerPageChange}
+            rowsPerPageOptions={[5, 10, 25, 50]}
+            sx={{ borderTop: 1, borderColor: 'divider' }}
+          />
+        </Card>
+
+        {/* Add/Edit Dialog */}
+        <Dialog 
+          open={open} 
+          onClose={handleCloseDialog} 
+          fullWidth 
+          maxWidth="sm"
+          PaperProps={{
+            sx: {
+              borderRadius: 2
+            }
+          }}
+        >
+          <DialogTitle sx={{ 
+            bgcolor: 'primary.main', 
+            color: 'primary.contrastText',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            {editingItem ? "Edit Item" : "Add New Item"}
+            <IconButton
+              onClick={handleCloseDialog}
+              disabled={isSubmitting || isUploading}
+              color="inherit"
+            >
+              <Close />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent sx={{ pt: 3 }}>
+            {error && (
+              <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+                {error}
+              </Alert>
+            )}
+            
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  select
+                  fullWidth
+                  label="Business"
+                  name="businessId"
+                  value={form.businessId}
+                  onChange={handleFormChange}
+                  required
+                  error={!!formErrors.businessId}
+                  helperText={formErrors.businessId}
+                  disabled={isSubmitting || isLoading || editingItem}
+                  size="small"
+                  sx={{ mb: 2 }}
+                >
+                  <MenuItem value="" disabled>
+                    Select a Business
+                  </MenuItem>
+                  {businesses.map((bus) => (
+                    <MenuItem key={bus._id} value={bus._id}>
+                      {bus.name}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  select
+                  fullWidth
+                  label="Category"
+                  name="category"
+                  value={form.category}
+                  onChange={handleFormChange}
+                  required
+                  error={!!formErrors.category}
+                  helperText={formErrors.category}
+                  disabled={
+                    isSubmitting ||
+                    !form.businessId ||
+                    dialogCategories.length === 0
+                  }
+                  size="small"
+                  sx={{ mb: 2 }}
+                >
+                  <MenuItem value="" disabled>
+                    Select a Category
+                  </MenuItem>
+                  {dialogCategories.map((cat) => (
+                    <MenuItem key={cat._id} value={cat._id}>
+                      {cat.name}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Item Name"
+                  name="name"
+                  value={form.name}
+                  onChange={handleFormChange}
+                  required
+                  error={!!formErrors.name}
+                  helperText={formErrors.name}
+                  disabled={isSubmitting}
+                  size="small"
+                  sx={{ mb: 2 }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Description"
+                  name="description"
+                  value={form.description}
+                  onChange={handleFormChange}
+                  required
+                  multiline
+                  rows={3}
+                  error={!!formErrors.description}
+                  helperText={formErrors.description}
+                  disabled={isSubmitting}
+                  size="small"
+                  sx={{ mb: 2 }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Card variant="outlined" sx={{ p: 2, mb: 2 }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Item Image
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      p: 2,
+                      border: '1px dashed',
+                      borderColor: 'divider',
+                      borderRadius: 1,
+                      bgcolor: 'background.default'
+                    }}
+                  >
+                    {form.image ? (
+                      <>
+                        <Box
+                          component="img"
+                          src={form.image}
+                          alt="Preview"
+                          sx={{
+                            maxHeight: 150,
+                            maxWidth: '100%',
+                            mb: 2,
+                            borderRadius: 1
+                          }}
+                        />
+                        <Button
+                          variant="outlined"
+                          color="error"
+                          onClick={() => setForm(prev => ({ ...prev, image: null }))}
+                          disabled={isSubmitting}
+                        >
+                          Remove Image
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <CloudUpload fontSize="large" color="action" sx={{ mb: 1 }} />
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                          Drag and drop an image here, or click to select
+                        </Typography>
+                        <Button
+                          variant="contained"
+                          component="label"
+                          disabled={isSubmitting || isUploading}
+                        >
+                          Upload Image
+                          <input
+                            type="file"
+                            hidden
+                            accept="image/*"
+                            onChange={handleImageChange}
+                          />
+                        </Button>
+                        <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+                          Max file size: 5MB
+                        </Typography>
+                      </>
+                    )}
+                  </Box>
+                  {isUploading && (
+                    <Box sx={{ width: '100%', mt: 2 }}>
+                      <LinearProgress variant="determinate" value={uploadProgress} />
+                      <Typography variant="caption" display="block" textAlign="center">
+                        Uploading: {Math.round(uploadProgress)}%
+                      </Typography>
+                    </Box>
+                  )}
+                  {formErrors.image && (
+                    <Typography color="error" variant="caption">
+                      {formErrors.image}
                     </Typography>
-                  </TableCell>
-                </TableRow>
+                  )}
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Price"
+                  name="price"
+                  type="number"
+                  value={form.price}
+                  onChange={handleFormChange}
+                  required
+                  error={!!formErrors.price}
+                  helperText={formErrors.price}
+                  disabled={isSubmitting}
+                  size="small"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">$</InputAdornment>
+                    ),
+                    inputProps: { step: "0.01", min: "0" },
+                  }}
+                  sx={{ mb: 2 }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  select
+                  fullWidth
+                  label="Status"
+                  name="status"
+                  value={form.status}
+                  onChange={handleFormChange}
+                  disabled={isSubmitting}
+                  size="small"
+                  sx={{ mb: 2 }}
+                >
+                  {["active", "inactive"].map((opt) => (
+                    <MenuItem key={opt} value={opt}>
+                      {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+            <Button
+              onClick={handleCloseDialog}
+              disabled={isSubmitting || isUploading}
+              variant="outlined"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleSubmit}
+              disabled={isSubmitting || isUploading}
+              sx={{ minWidth: 120 }}
+            >
+              {isSubmitting ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : editingItem ? (
+                "Update Item"
+              ) : (
+                "Add Item"
               )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        {/* Pagination */}
-        <TablePagination
-          component="div"
-          count={totalItems}
-          page={pageNumber - 1} // 0-based index for component
-          onPageChange={handlePageChange}
-          rowsPerPage={pageSize}
-          onRowsPerPageChange={handleRowsPerPageChange}
-          rowsPerPageOptions={[5, 10, 25, 50]} // Added more options
-          sx={{ mt: 2 }} // Add margin top
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Confirmation Dialog */}
+        <ConfirmDialog
+          open={confirmOpen}
+          message="Are you sure you want to delete this item? This action cannot be undone."
+          onConfirm={handleDeleteConfirm}
+          onClose={() => setConfirmOpen(false)}
         />
       </Box>
-
-      {/* Add/Edit Dialog */}
-      <Dialog open={open} onClose={handleCloseDialog} fullWidth maxWidth="sm">
-        <DialogTitle sx={{ pb: 1 }}>
-          {" "}
-          {/* Reduce bottom padding */}
-          {editingItem ? "Edit Item" : "Add Item"}
-          <IconButton
-            aria-label="close" // Accessibility
-            onClick={handleCloseDialog}
-            sx={{ position: "absolute", right: 12, top: 10 }} // Adjust position slightly
-            disabled={isSubmitting || isUploading}
-          >
-            <Close />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent>
-          {/* Display general submit errors here */}
-          {error && (
-            <Alert
-              severity="error"
-              sx={{ mb: 2 }}
-              onClose={() => setError(null)}
-            >
-              {error}
-            </Alert>
-          )}
-          {/* Use Box for layout within DialogContent */}
-          <Box
-            component="form"
-            noValidate
-            autoComplete="off"
-            sx={{ display: "flex", flexDirection: "column", gap: 2.5, mt: 1 }}
-          >
-            {" "}
-            {/* Increased gap */}
-            <TextField
-              select
-              label="Business"
-              name="businessId"
-              value={form.businessId}
-              onChange={handleFormChange}
-              fullWidth
-              required
-              error={!!formErrors.businessId}
-              helperText={formErrors.businessId}
-              disabled={isSubmitting || isLoading || editingItem}
-              size="small"
-            >
-              <MenuItem value="" disabled>
-                <em>Select a Business</em>
-              </MenuItem>{" "}
-              {/* Placeholder */}
-              {businesses.map((bus) => (
-                <MenuItem key={bus._id} value={bus._id}>
-                  {bus.name}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              select
-              label="Category"
-              name="category"
-              value={form.category}
-              onChange={handleFormChange}
-              fullWidth
-              required
-              error={!!formErrors.category}
-              helperText={formErrors.category}
-              disabled={
-                isSubmitting ||
-                !form.businessId ||
-                dialogCategories.length === 0
-              }
-              size="small"
-            >
-              <MenuItem value="" disabled>
-                <em>Select a Category</em>
-              </MenuItem>
-              {dialogCategories.map((cat) => (
-                <MenuItem key={cat._id} value={cat._id}>
-                  {cat.name}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              label="Name"
-              name="name"
-              value={form.name}
-              onChange={handleFormChange}
-              fullWidth
-              required
-              error={!!formErrors.name}
-              helperText={formErrors.name}
-              disabled={isSubmitting}
-              size="small"
-            />
-            <TextField
-              label="Description"
-              name="description"
-              value={form.description}
-              onChange={handleFormChange}
-              fullWidth
-              required
-              multiline
-              rows={3}
-              error={!!formErrors.description}
-              helperText={formErrors.description}
-              disabled={isSubmitting}
-              size="small"
-            />
-            {/* Image Upload Field */}
-            <Box>
-              <Typography
-                variant="subtitle2"
-                gutterBottom
-                component="label"
-                htmlFor="item-image-upload"
-              >
-                Item Image (Optional, max 5MB)
-              </Typography>
-              <TextField
-                id="item-image-upload"
-                type="file"
-                name="imageFile" // Use different name to avoid conflict with form.image URL state
-                accept="image/*"
-                onChange={handleImageChange}
-                fullWidth
-                size="small"
-                sx={{ mt: 0.5 }}
-                error={!!formErrors.image}
-                helperText={
-                  formErrors.image ||
-                  (isUploading
-                    ? `Uploading: ${uploadProgress.toFixed(0)}%`
-                    : "")
-                }
-                disabled={isSubmitting || isUploading}
-                InputLabelProps={{ shrink: true }} // Keep label floated
-              />
-              {/* Image Preview */}
-              {form.image &&
-                !isUploading && ( // Show preview if URL exists and not currently uploading
-                  <Box
-                    mt={1.5}
-                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                  >
-                    <img
-                      src={form.image}
-                      alt="Image Preview"
-                      style={{
-                        maxHeight: 200,
-                        maxWidth: 200,
-                        borderRadius: 4,
-                        objectFit: "cover",
-                      }}
-                    />
-                    <Typography variant="caption">Current Image</Typography>
-                    {/* Add button to remove image */}
-                    <Button
-                      size="small"
-                      color="error"
-                      onClick={() =>
-                        setForm((prev) => ({ ...prev, image: null }))
-                      }
-                      disabled={isSubmitting}
-                    >
-                      Remove
-                    </Button>
-                  </Box>
-                )}
-              {/* Show progress bar during upload */}
-              {isUploading && (
-                <Box sx={{ width: "100%", mt: 1 }}>
-                  <LinearProgress
-                    variant="determinate"
-                    value={uploadProgress}
-                  />
-                </Box>
-              )}
-            </Box>
-            <TextField
-              label="Price"
-              name="price"
-              type="number"
-              value={form.price}
-              onChange={handleFormChange}
-              fullWidth
-              required
-              error={!!formErrors.price}
-              helperText={formErrors.price}
-              disabled={isSubmitting}
-              size="small"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">$</InputAdornment>
-                ),
-                inputProps: { step: "0.01", min: "0" }, // Allow decimals, prevent negative
-              }}
-            />
-            <TextField
-              select
-              label="Status"
-              name="status"
-              value={form.status}
-              onChange={handleFormChange}
-              fullWidth
-              disabled={isSubmitting}
-              size="small"
-            >
-              {/* Ensure values match backend expectations */}
-              {["active", "inactive"].map((opt) => (
-                <MenuItem key={opt} value={opt}>
-                  {opt}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          {" "}
-          {/* Add padding */}
-          <Button
-            onClick={handleCloseDialog}
-            disabled={isSubmitting || isUploading}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleSubmit}
-            disabled={isSubmitting || isUploading} // Disable while submitting or uploading
-          >
-            {isSubmitting ? (
-              <>
-                <CircularProgress size={20} sx={{ mr: 1 }} color="inherit" />
-                {editingItem ? "Updating..." : "Adding..."}
-              </>
-            ) : editingItem ? (
-              "Update Item"
-            ) : (
-              "Add Item"
-            )}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Confirmation Dialog for Deletion */}
-      <ConfirmDialog
-        open={confirmOpen}
-        message="Are you sure you want to delete this item? This action cannot be undone." // More specific message
-        onConfirm={handleDeleteConfirm}
-        onClose={() => setConfirmOpen(false)} // Ensure it can be closed
-      />
     </MainLayout>
   );
 };
