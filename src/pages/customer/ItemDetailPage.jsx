@@ -25,7 +25,7 @@ import {
 } from "@mui/icons-material";
 import api from "../../api/axiosConfig";
 import { useCart } from "../../contexts/CartContext";
-import CartPage from "./CartPage";
+import CartSummaryBar from "../../components/CartSummaryBar";
 
 const ItemDetailPage = () => {
   const { addToCart } = useCart();
@@ -294,7 +294,9 @@ const ItemDetailPage = () => {
           <strong>Category ID:</strong> {item.categoryId.name}
         </Typography>
       </Box>
-      <CartPage />
+      <Box sx={{ mt: 10 }}>
+        <CartSummaryBar />
+      </Box>
     </Container>
   );
 };

@@ -18,6 +18,7 @@ import api from "../../api/axiosConfig";
 import Loading from "../../components/Loading";
 import { useCart } from "../../contexts/CartContext";
 import CartPage from "./CartPage";
+import CartSummaryBar from "../../components/CartSummaryBar";
 
 const MenuPage = () => {
   const { addToCart } = useCart();
@@ -92,7 +93,7 @@ const MenuPage = () => {
   }, [id, fetchBusiness, fetchCategories, fetchItems]);
 
   const filteredItems = selectedCategory
-    ? items.filter((item) => item.categoryId._id === selectedCategory)
+    ? items.data.filter((item) => item.categoryId._id === selectedCategory)
     : items;
 
   // const addToCart = (item) => {
@@ -258,7 +259,9 @@ const MenuPage = () => {
           </Box>
         )}
       </Container>
-      <CartPage />
+      <Box sx={{ mt: 10 }}>
+        <CartSummaryBar />
+      </Box>
     </Box>
   );
 };
