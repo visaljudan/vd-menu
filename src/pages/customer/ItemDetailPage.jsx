@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -13,26 +13,29 @@ import {
   Container,
   IconButton,
   CircularProgress,
-  Stack
-} from '@mui/material';
+  Stack,
+} from "@mui/material";
 import {
   ShoppingCart,
   FavoriteBorder,
   Favorite,
   ArrowBack,
   Info,
-  LocalOffer
-} from '@mui/icons-material';
+  LocalOffer,
+} from "@mui/icons-material";
 import api from "../../api/axiosConfig";
+import { useCart } from "../../contexts/CartContext";
+import CartPage from "./CartPage";
 
 const ItemDetailPage = () => {
+  const { addToCart } = useCart();
   const { id } = useParams();
   const [isFavorite, setIsFavorite] = useState(false);
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [categoryName, setCategoryName] = useState('');
-  const [businessName, setBusinessName] = useState('');
+  const [categoryName, setCategoryName] = useState("");
+  const [businessName, setBusinessName] = useState("");
 
   useEffect(() => {
     const fetchItem = async () => {
@@ -41,7 +44,7 @@ const ItemDetailPage = () => {
         const response = await api.get(`api/v1/items/${id}`);
         const itemData = response.data.data;
         setItem(itemData);
-        
+
         // // Fetch category name if categoryId exists
         // if (itemData.categoryId) {
         //   try {
@@ -51,7 +54,7 @@ const ItemDetailPage = () => {
         //     console.error("Error fetching category:", categoryError);
         //   }
         // }
-        
+
         // // Fetch business name if businessId exists
         // if (itemData.businessId) {
         //   try {
@@ -61,7 +64,7 @@ const ItemDetailPage = () => {
         //     console.error("Error fetching business:", businessError);
         //   }
         // }
-        
+
         setError(null);
       } catch (err) {
         console.error("Error fetching item:", err);
@@ -76,7 +79,15 @@ const ItemDetailPage = () => {
 
   if (loading) {
     return (
-      <Container sx={{ py: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+      <Container
+        sx={{
+          py: 4,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "60vh",
+        }}
+      >
         <CircularProgress />
       </Container>
     );
@@ -88,8 +99,8 @@ const ItemDetailPage = () => {
         <Typography variant="h5" component="h2" gutterBottom color="error">
           {error}
         </Typography>
-        <Button 
-          startIcon={<ArrowBack />} 
+        <Button
+          startIcon={<ArrowBack />}
           sx={{ mt: 2 }}
           onClick={() => window.history.back()}
         >
@@ -105,8 +116,8 @@ const ItemDetailPage = () => {
         <Typography variant="h5" component="h2" gutterBottom>
           Item not found
         </Typography>
-        <Button 
-          startIcon={<ArrowBack />} 
+        <Button
+          startIcon={<ArrowBack />}
           sx={{ mt: 2 }}
           onClick={() => window.history.back()}
         >
@@ -119,26 +130,28 @@ const ItemDetailPage = () => {
   // Determine status display
   const getStatusDisplay = (status) => {
     const statusMap = {
-      active: { text: 'In Stock', color: 'success' },
-      inactive: { text: 'Out of Stock', color: 'error' },
-      discontinued: { text: 'Discontinued', color: 'warning' },
-      preorder: { text: 'Pre-Order', color: 'info' }
+      active: { text: "In Stock", color: "success" },
+      inactive: { text: "Out of Stock", color: "error" },
+      discontinued: { text: "Discontinued", color: "warning" },
+      preorder: { text: "Pre-Order", color: "info" },
     };
-    return statusMap[status.toLowerCase()] || { text: 'Unknown', color: 'default' };
+    return (
+      statusMap[status.toLowerCase()] || { text: "Unknown", color: "default" }
+    );
   };
 
   const statusInfo = getStatusDisplay(item.status);
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Button 
-        startIcon={<ArrowBack />} 
+      <Button
+        startIcon={<ArrowBack />}
         sx={{ mb: 2 }}
         onClick={() => window.history.back()}
       >
         Back to products
       </Button>
-      
+
       <Card elevation={0} sx={{ mb: 4 }}>
         <Grid container spacing={4}>
           {/* Image section */}
@@ -147,59 +160,69 @@ const ItemDetailPage = () => {
               component="img"
               alt={item.name}
               image={item.image}
-              sx={{ 
+              sx={{
                 borderRadius: 1,
-                width: '100%',
-                height: 'auto',
+                width: "100%",
+                height: "auto",
                 maxHeight: 500,
-                objectFit: 'cover'
+                objectFit: "cover",
               }}
             />
           </Grid>
-          
+
           {/* Details section */}
           <Grid item xs={12} md={6}>
             <CardContent sx={{ p: 0 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                }}
+              >
                 <Typography variant="h4" component="h1" gutterBottom>
                   {item.name}
                 </Typography>
-                <IconButton 
+                <IconButton
                   aria-label="add to favorites"
                   onClick={() => setIsFavorite(!isFavorite)}
                 >
                   {isFavorite ? <Favorite color="error" /> : <FavoriteBorder />}
                 </IconButton>
               </Box>
-              
+
               <Typography variant="h5" component="div" sx={{ mb: 2 }}>
                 ${item.price.toFixed(2)}
               </Typography>
-              
-              <Chip 
-                label={statusInfo.text} 
-                color={statusInfo.color} 
-                size="small" 
+
+              <Chip
+                label={statusInfo.text}
+                color={statusInfo.color}
+                size="small"
                 sx={{ mb: 3 }}
               />
-              
+
               <Typography variant="body1" paragraph sx={{ mb: 3 }}>
                 {item.description}
               </Typography>
-              
+
               <Divider sx={{ my: 2 }} />
-              
+
               {/* Tags section */}
               {item.tags && item.tags.length > 0 && (
                 <Box sx={{ mb: 3 }}>
-                  <Typography variant="subtitle1" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography
+                    variant="subtitle1"
+                    gutterBottom
+                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                  >
                     <LocalOffer fontSize="small" /> Tags
                   </Typography>
                   <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                     {item.tags.map((tag, index) => (
-                      <Chip 
-                        key={index} 
-                        label={tag} 
+                      <Chip
+                        key={index}
+                        label={tag}
                         size="small"
                         variant="outlined"
                       />
@@ -207,11 +230,15 @@ const ItemDetailPage = () => {
                   </Stack>
                 </Box>
               )}
-              
+
               {/* Additional info from meta */}
               {item.meta?.additionalInfo && (
                 <Box sx={{ mb: 3 }}>
-                  <Typography variant="subtitle1" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography
+                    variant="subtitle1"
+                    gutterBottom
+                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                  >
                     <Info fontSize="small" /> Additional Information
                   </Typography>
                   <Typography variant="body2">
@@ -219,7 +246,7 @@ const ItemDetailPage = () => {
                   </Typography>
                 </Box>
               )}
-              
+
               {/* Category and Business info */}
               <Box sx={{ mb: 3 }}>
                 {categoryName && (
@@ -233,14 +260,15 @@ const ItemDetailPage = () => {
                   </Typography>
                 )}
               </Box>
-              
-              <Box sx={{ display: 'flex', gap: 2, mt: 4 }}>
-                <Button 
-                  variant="contained" 
-                  size="large" 
+
+              <Box sx={{ display: "flex", gap: 2, mt: 4 }}>
+                <Button
+                  variant="contained"
+                  size="large"
                   startIcon={<ShoppingCart />}
-                  disabled={item.status !== 'active'}
+                  disabled={item.status !== "active"}
                   sx={{ flexGrow: 1 }}
+                  onClick={() => addToCart(item)}
                 >
                   Add to Cart
                 </Button>
@@ -249,7 +277,7 @@ const ItemDetailPage = () => {
           </Grid>
         </Grid>
       </Card>
-      
+
       {/* Additional information section */}
       <Box sx={{ mt: 4 }}>
         <Typography variant="h6" gutterBottom>
@@ -258,15 +286,15 @@ const ItemDetailPage = () => {
         <Typography variant="body2" color="text.secondary" paragraph>
           <strong>Status:</strong> {item.status}
         </Typography>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            <strong>Business ID:</strong> {item.businessId.name}
-          </Typography>
-        
-          <Typography variant="body2" color="text.secondary">
-            <strong>Category ID:</strong> {item.categoryId.name}
-          </Typography>
+        <Typography variant="body2" color="text.secondary" paragraph>
+          <strong>Business ID:</strong> {item.businessId.name}
+        </Typography>
 
+        <Typography variant="body2" color="text.secondary">
+          <strong>Category ID:</strong> {item.categoryId.name}
+        </Typography>
       </Box>
+      <CartPage />
     </Container>
   );
 };
