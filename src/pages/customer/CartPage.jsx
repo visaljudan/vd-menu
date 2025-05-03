@@ -1,19 +1,20 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Box,
   Container,
   Typography,
   Button,
   Grid,
-  Card,
-  CardContent,
   CardMedia,
   IconButton,
   Paper,
   Divider,
-  Badge,
   Avatar,
   Chip,
+  TextField,
+  Snackbar,
+  Alert,
+  Badge
 } from "@mui/material";
 import { useCart } from "../../contexts/CartContext";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -22,9 +23,16 @@ import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
+import TelegramIcon from "@mui/icons-material/Telegram";
 
 const CartPage = () => {
   const { cartItems, removeFromCart, clearCart, updateQuantity } = useCart();
+  const [clientContact, setClientContact] = useState("");
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success"
+  });
 
   const totalPrice = cartItems.reduce(
     (acc, item) => acc + item.price * item.quantity,
@@ -40,9 +48,83 @@ const CartPage = () => {
 
   const handleDecreaseQuantity = (itemId) => {
     const item = cartItems.find(item => item._id === itemId);
-    if (item && item.quantity > 1) {
-      updateQuantity(itemId, item.quantity - 1);
+    if (item) {
+      if (item.quantity > 1) {
+        updateQuantity(itemId, item.quantity - 1);
+      } else {
+        removeFromCart(itemId);
+      }
     }
+  };
+
+  const sendToTelegram = async () => {
+    if (!clientContact) {
+      setSnackbar({
+        open: true,
+        message: "Please enter client contact information",
+        severity: "error"
+      });
+      return;
+    }
+
+    try {
+      const TELEGRAM_BOT_TOKEN = "8024094916:AAGbPgoaBeYlMboDf_PEDyUAprmSmBTIPIs";
+      const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+      
+      // Create message using HTML formatting
+      const cartItemsText = cartItems.map(item => {
+        return `<b>${item.name}</b> - $${item.price.toFixed(2)} x ${item.quantity} = $${(item.price * item.quantity).toFixed(2)}`;
+      }).join('\n');
+      
+      const message = `
+<b>📋 New Order</b>
+-------------------------
+${cartItemsText}
+-------------------------
+<b>Total: $${totalPrice.toFixed(2)}</b>
+
+<b>Client:</b> ${clientContact}
+`;
+      
+      const chatId = clientContact.startsWith('@') ? clientContact : clientContact;
+      
+      const response = await fetch(TELEGRAM_API, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: message,
+          parse_mode: 'HTML'
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.ok) {
+        setSnackbar({
+          open: true,
+          message: "Order sent to client successfully!",
+          severity: "success"
+        });
+        clearCart();
+        setClientContact("");
+      } else {
+        throw new Error(data.description || "Failed to send message");
+      }
+    } catch (error) {
+      console.error("Error sending to Telegram:", error);
+      setSnackbar({
+        open: true,
+        message: `Failed to send: ${error.message}`,
+        severity: "error"
+      });
+    }
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
   };
 
   return (
@@ -187,22 +269,40 @@ const CartPage = () => {
                         <Typography sx={{ color: "text.secondary", display: { xs: "block", md: "none" }, mb: 1 }}>
                           Quantity:
                         </Typography>
-                        <Box sx={{ display: "inline-flex", alignItems: "center", border: "1px solid", borderColor: "divider", borderRadius: 1 }}>
+                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: { xs: "flex-start", md: "center" } }}>
                           <IconButton 
                             size="small" 
                             onClick={() => handleDecreaseQuantity(item._id)}
                             disabled={item.quantity <= 1}
-                            sx={{ p: 0.5 }}
+                            sx={{ 
+                              p: 0.5,
+                              border: '1px solid',
+                              borderColor: 'divider',
+                              borderRadius: '4px 0 0 4px'
+                            }}
                           >
                             <RemoveIcon fontSize="small" />
                           </IconButton>
-                          <Typography sx={{ px: 2, py: 0.5, minWidth: 30, textAlign: "center" }}>
+                          <Typography sx={{ 
+                            px: 2, 
+                            py: 1, 
+                            minWidth: 36, 
+                            textAlign: 'center',
+                            borderTop: '1px solid',
+                            borderBottom: '1px solid',
+                            borderColor: 'divider'
+                          }}>
                             {item.quantity}
                           </Typography>
                           <IconButton 
                             size="small" 
                             onClick={() => handleIncreaseQuantity(item._id)}
-                            sx={{ p: 0.5 }}
+                            sx={{ 
+                              p: 0.5,
+                              border: '1px solid',
+                              borderColor: 'divider',
+                              borderRadius: '0 4px 4px 0'
+                            }}
                           >
                             <AddIcon fontSize="small" />
                           </IconButton>
@@ -245,11 +345,18 @@ const CartPage = () => {
             >
               <Box sx={{ flex: 1 }}>
                 <Typography variant="h6" gutterBottom fontWeight="bold">
-                  Order Notes
+                  Client Information
                 </Typography>
-                <Typography variant="body2" color="text.secondary" paragraph sx={{ mb: 3 }}>
-                  Add special instructions for your order
-                </Typography>
+                <TextField
+                  fullWidth
+                  label="Client Telegram Username or Chat ID"
+                  placeholder="@username or chat ID"
+                  value={clientContact}
+                  onChange={(e) => setClientContact(e.target.value)}
+                  sx={{ mb: 3 }}
+                  helperText="Enter client's Telegram username (e.g., @client) or chat ID"
+                  error={snackbar.severity === "error" && snackbar.message.includes("client contact")}
+                />
                 <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
                   <LocalShippingIcon color="primary" sx={{ mr: 1 }} />
                   <Typography variant="body2">
@@ -296,6 +403,9 @@ const CartPage = () => {
                   variant="contained"
                   fullWidth
                   size="large"
+                  startIcon={<TelegramIcon />}
+                  onClick={sendToTelegram}
+                  disabled={cartItems.length === 0 || !clientContact.trim()}
                   sx={{ 
                     mb: 2,
                     py: 1.5,
@@ -306,7 +416,7 @@ const CartPage = () => {
                     }
                   }}
                 >
-                  Proceed to Checkout
+                  Send to Client via Telegram
                 </Button>
                 
                 <Button
@@ -314,6 +424,7 @@ const CartPage = () => {
                   color="error"
                   fullWidth
                   onClick={clearCart}
+                  disabled={cartItems.length === 0}
                   sx={{ fontWeight: "medium" }}
                 >
                   Clear Cart
@@ -323,6 +434,12 @@ const CartPage = () => {
           </>
         )}
       </Paper>
+      
+      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

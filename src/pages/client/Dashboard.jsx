@@ -20,6 +20,7 @@ import {
 import { useSelector } from "react-redux";
 import { NavLink } from "react-router-dom";
 import MainLayout from "../../layouts/MainLayout";
+import api from "../../api/axiosConfig";
 
 // Icons
 import BusinessIcon from "@mui/icons-material/Business";

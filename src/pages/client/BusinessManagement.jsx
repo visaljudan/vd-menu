@@ -21,9 +21,11 @@ import {
   DialogActions,
   Tooltip,
   TablePagination,
-  CircularProgress, // Added for loading indication
+  CircularProgress,
+  Grid, 
+   // Added for loading indication
 } from "@mui/material";
-import { Edit, Add, Close } from "@mui/icons-material";
+import { Edit, Add, Close, CloudUpload } from "@mui/icons-material";
 import DeleteTwoToneIcon from "@mui/icons-material/DeleteTwoTone";
 import { Helmet } from "react-helmet";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
@@ -509,173 +511,253 @@ export default function BusinessManagement() {
       </Box>
 
       {/* --- Add/Edit Dialog --- */}
+     {/* --- Add/Edit Business Dialog --- */}
       <Dialog
         open={isAddEditDialogOpen}
         onClose={handleCloseAddEditDialog}
         fullWidth
         maxWidth="sm"
         disableEscapeKeyDown={isSubmitting}
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            boxShadow: (theme) => theme.shadows[5],
+          }
+        }}
       >
+        {/* Dialog Header */}
         <DialogTitle
           sx={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            bgcolor: "primary.main",
+            color: "primary.contrastText",
+            px: 3,
+            py: 2,
           }}
         >
-          {editingBusiness ? "Edit Business" : "Add New Business"}
+          <Typography variant="h6" fontWeight="medium">
+            {editingBusiness ? "Edit Business" : "Add New Business"}
+          </Typography>
           <IconButton
             onClick={handleCloseAddEditDialog}
             edge="end"
             disabled={isSubmitting}
+            sx={{ color: "primary.contrastText" }}
           >
             <Close />
           </IconButton>
         </DialogTitle>
-        <DialogContent dividers>
+
+        {/* Dialog Content */}
+        <DialogContent dividers sx={{ py: 3, px: 3 }}>
           {formError && (
-            <Typography color="error" sx={{ mb: 2 }} role="alert">
+            <Alert severity="error" sx={{ mb: 3 }}>
               {formError}
-            </Typography>
+            </Alert>
           )}
-          <TextField
-            select
-            label="Telegram ID"
-            name="telegramId"
-            value={formState.telegramId}
-            onChange={handleFormInputChange}
-            fullWidth
-            required
-            sx={{ mb: 2 }}
-            disabled={isSubmitting}
-            size="small"
-          >
-            {telegrams?.data?.map((telegram, index) => (
-              <MenuItem key={telegram._id} value={telegram._id}>
-                {telegram.name}
-              </MenuItem>
-            ))}
-          </TextField>
 
-          <TextField
-            label="CompanyName"
-            name="name"
-            value={formState.name}
-            onChange={handleFormInputChange}
-            fullWidth
-            required
-            sx={{ mb: 2 }}
-            disabled={isSubmitting}
-            size="small"
-          />
-          <TextField
-            label="Description"
-            name="description"
-            value={formState.description}
-            onChange={handleFormInputChange}
-            fullWidth
-            multiline
-            rows={3}
-            sx={{ mb: 2 }}
-            disabled={isSubmitting}
-            size="small"
-          />
-          <TextField
-            label="Location"
-            name="location"
-            value={formState.location}
-            onChange={handleFormInputChange}
-            fullWidth
-            sx={{ mb: 2 }} // Keep margin bottom for spacing
-            disabled={isSubmitting}
-            size="small"
-          />
-          <Box sx={{ mb: 2 }}>
-            <Typography
-              variant="subtitle2"
-              gutterBottom
-              component="label"
-              htmlFor="logo"
-            >
-              Logo
-            </Typography>
-            <TextField
-              id="logo"
-              type="file"
-              name="logo"
-              accept="image/*"
-              onChange={handleLogoChange}
-              fullWidth
-              disabled={isSubmitting}
-              size="small"
-              sx={{ mt: 0.5 }}
-            />
-            {formState?.logo && (
-              <Box mt={1}>
-                <img
-                  src={formState.logo}
-                  alt="Logo Preview"
-                  style={{ maxHeight: 100, borderRadius: 4 }}
-                />
+          <Grid container spacing={2}>
+            {/* Telegram ID */}
+            <Grid item xs={12}>
+              <TextField
+                select
+                label="Telegram ID"
+                name="telegramId"
+                value={formState.telegramId}
+                onChange={handleFormInputChange}
+                fullWidth
+                required
+                disabled={isSubmitting}
+                size="small"
+                variant="outlined"
+                InputLabelProps={{ shrink: true }}
+              >
+                {telegrams?.data?.map((telegram) => (
+                  <MenuItem key={telegram._id} value={telegram._id}>
+                    {telegram.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+
+            {/* Company Name */}
+            <Grid item xs={12}>
+              <TextField
+                label="Company Name"
+                name="name"
+                value={formState.name}
+                onChange={handleFormInputChange}
+                fullWidth
+                required
+                disabled={isSubmitting}
+                size="small"
+                variant="outlined"
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+
+            {/* Description */}
+            <Grid item xs={12}>
+              <TextField
+                label="Description"
+                name="description"
+                value={formState.description}
+                onChange={handleFormInputChange}
+                fullWidth
+                multiline
+                rows={3}
+                disabled={isSubmitting}
+                size="small"
+                variant="outlined"
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+
+            {/* Location */}
+            <Grid item xs={12}>
+              <TextField
+                label="Location"
+                name="location"
+                value={formState.location}
+                onChange={handleFormInputChange}
+                fullWidth
+                disabled={isSubmitting}
+                size="small"
+                variant="outlined"
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+
+            {/* Logo Upload */}
+            <Grid item xs={12}>
+              <Box>
+                <Typography variant="subtitle2" gutterBottom component="div">
+                  Logo
+                </Typography>
+                <Button
+                  component="label"
+                  variant="outlined"
+                  startIcon={<CloudUpload />}
+                  disabled={isSubmitting}
+                  fullWidth
+                  sx={{
+                    py: 1.5,
+                    borderStyle: "dashed",
+                    borderWidth: 1,
+                    borderColor: "divider",
+                    '&:hover': {
+                      borderColor: "primary.main",
+                    }
+                  }}
+                >
+                  Upload Logo
+                  <input
+                    type="file"
+                    name="logo"
+                    accept="image/*"
+                    onChange={handleLogoChange}
+                    hidden
+                  />
+                </Button>
+                {formState?.logo && (
+                  <Box mt={2} textAlign="center">
+                    <img
+                      src={formState.logo}
+                      alt="Logo Preview"
+                      style={{
+                        maxHeight: 120,
+                        maxWidth: "100%",
+                        borderRadius: 1,
+                        border: "1px solid #eee"
+                      }}
+                    />
+                  </Box>
+                )}
               </Box>
-            )}
-          </Box>
+            </Grid>
 
-          <Box sx={{ mb: 2 }}>
-            <Typography
-              variant="subtitle2"
-              gutterBottom
-              component="label"
-              htmlFor="image"
-            >
-              Image
-            </Typography>
-            <TextField
-              id="image"
-              type="file"
-              name="image"
-              accept="image/*"
-              onChange={handleImageChange}
-              fullWidth
-              disabled={isSubmitting}
-              size="small"
-              sx={{ mt: 0.5 }}
-            />
-            {formState?.image && (
-              <Box mt={1}>
-                <img
-                  src={formState.image}
-                  alt="Image Preview"
-                  style={{ maxHeight: 100, borderRadius: 4 }}
-                />
+            {/* Image Upload */}
+            <Grid item xs={12}>
+              <Box>
+                <Typography variant="subtitle2" gutterBottom component="div">
+                  Image
+                </Typography>
+                <Button
+                  component="label"
+                  variant="outlined"
+                  startIcon={<CloudUpload />}
+                  disabled={isSubmitting}
+                  fullWidth
+                  sx={{
+                    py: 1.5,
+                    borderStyle: "dashed",
+                    borderWidth: 1,
+                    borderColor: "divider",
+                    '&:hover': {
+                      borderColor: "primary.main",
+                    }
+                  }}
+                >
+                  Upload Image
+                  <input
+                    type="file"
+                    name="image"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    hidden
+                  />
+                </Button>
+                {formState?.image && (
+                  <Box mt={2} textAlign="center">
+                    <img
+                      src={formState.image}
+                      alt="Image Preview"
+                      style={{
+                        maxHeight: 120,
+                        maxWidth: "100%",
+                        borderRadius: 1,
+                        border: "1px solid #eee"
+                      }}
+                    />
+                  </Box>
+                )}
               </Box>
-            )}
-          </Box>
+            </Grid>
 
-          <TextField
-            select
-            label="Status"
-            name="status"
-            value={formState.status}
-            onChange={handleFormInputChange}
-            fullWidth
-            required
-            sx={{ mb: 2 }} // Ensure margin bottom is still present
-            disabled={isSubmitting}
-            size="small"
-          >
-            {FORM_STATUS_OPTIONS.map((opt) => (
-              <MenuItem key={opt} value={opt}>
-                {opt}
-              </MenuItem>
-            ))}
-          </TextField>
+            {/* Status */}
+            <Grid item xs={12}>
+              <TextField
+                select
+                label="Status"
+                name="status"
+                value={formState.status}
+                onChange={handleFormInputChange}
+                fullWidth
+                required
+                disabled={isSubmitting}
+                size="small"
+                variant="outlined"
+                InputLabelProps={{ shrink: true }}
+              >
+                {FORM_STATUS_OPTIONS.map((opt) => (
+                  <MenuItem key={opt} value={opt}>
+                    {opt}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+          </Grid>
         </DialogContent>
-        <DialogActions sx={{ p: "16px 24px" }}>
+
+        {/* Dialog Actions */}
+        <DialogActions sx={{ px: 3, py: 2 }}>
           <Button
             onClick={handleCloseAddEditDialog}
             color="inherit"
             disabled={isSubmitting}
+            sx={{ mr: 1, px: 3 }}
           >
             Cancel
           </Button>
@@ -688,6 +770,7 @@ export default function BusinessManagement() {
                 <CircularProgress size={20} color="inherit" />
               ) : null
             }
+            sx={{ px: 3 }}
           >
             {isSubmitting ? "Saving..." : editingBusiness ? "Update" : "Save"}
           </Button>
