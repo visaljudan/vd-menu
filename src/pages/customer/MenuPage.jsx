@@ -37,6 +37,7 @@ import ShareIcon from '@mui/icons-material/Share';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import StorefrontIcon from '@mui/icons-material/Storefront';
 
 const MenuPage = () => {
   const theme = useTheme();
@@ -261,7 +262,7 @@ const MenuPage = () => {
                   }}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <RestaurantIcon fontSize="small" color="action" sx={{ mr: 0.5 }} />
+                    <StorefrontIcon fontSize="small" color="action" sx={{ mr: 0.5 }} />
                     <Typography variant="body2" color="text.secondary">
                       {business?.cuisine || 'Italian, American'}
                     </Typography>
@@ -356,7 +357,7 @@ const MenuPage = () => {
               boxShadow: 2
             }}
           >
-            <RestaurantIcon sx={{ fontSize: 60, color: 'text.secondary', opacity: 0.5, mb: 2 }} />
+            <StorefrontIcon sx={{ fontSize: 60, color: 'text.secondary', opacity: 0.5, mb: 2 }} />
             <Typography variant="h5" gutterBottom>
               No items found
             </Typography>

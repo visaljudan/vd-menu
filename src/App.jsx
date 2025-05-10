@@ -10,7 +10,7 @@ import SignInPage from "./pages/auth/SignInPage";
 import AdminUserManagement from "./pages/admin/AdminUserManagement";
 import AdminUserEdit from "./pages/admin/AdminUserEdit";
 import CartPage from "./pages/customer/CartPage";
-import ZTestPage from "./pages/ZTestPage";
+// import ZTestPage from "./pages/ZTestPage";
 import AdminSubscriptionPlanManagementPage from "./pages/admin/AdminSubscriptionPlanManagement";
 import SubscriptionPlan from "./pages/SubscriptionPlanPage";
 import DashboardPage from "./pages/admin/AdminDashboard";
@@ -27,6 +27,7 @@ import ItemDetailPage from "./pages/customer/ItemDetailPage";
 import MenuPage from "./pages/customer/MenuPage";
 import { CartProvider } from "./contexts/CartContext"; // Cart Context
 import QRCodeGenerator from "./pages/customer/QRCodePage"
+
 
 const App = () => {
   return (
@@ -90,7 +91,7 @@ const App = () => {
             <Route path="/admin/reports" element={<AdminReport />} />
             <Route path="/admin/analysis" element={<AdminAnalysis />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
-            <Route path="/test" element={<ZTestPage />} />
+            {/* <Route path="/test" element={<ZTestPage />} /> */}
           </Routes>
         </CartProvider>
       </Router>

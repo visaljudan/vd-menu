@@ -42,7 +42,7 @@ import {
   signOutSuccess,
 } from "../app/user/userSlice";
 import { toast } from "react-toastify";
-
+import VDMenu from "../assets/Logo_VD_Menu.png"
 // Styled components
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
   backgroundColor: theme.palette.background.paper,
@@ -215,7 +215,7 @@ const Navbar = () => {
           <StyledNavLink to="/">
             <LogoWrapper>
               <Logo
-                src="https://i.pinimg.com/736x/12/83/16/1283166bf58b7a77574a51cdeaa68142.jpg"
+                src={VDMenu}
                 alt="Logo"
               />
               <Typography
@@ -227,7 +227,7 @@ const Navbar = () => {
                   display: { xs: 'none', sm: 'block' }
                 }}
               >
-                Company Name
+                VD Menu
               </Typography>
             </LogoWrapper>
           </StyledNavLink>
@@ -279,7 +279,7 @@ const Navbar = () => {
                     </Avatar>
                   </StyledBadge>
                   <Box sx={{ ml: 1, mr: 0.5 }}>
-                    <Typography variant="subtitle2" noWrap>
+                    <Typography color="text.secondary" variant="subtitle2">
                       {user?.name}
                     </Typography>
                     <Typography variant="caption" color="text.secondary" noWrap>
