@@ -127,14 +127,14 @@ const BusinessCard = ({
           }}
         />
         
-        {/* Logo */}
+        {/* Logo - Made bigger */}
         <Box
           sx={{
             position: "absolute",
-            bottom: -24,
+            bottom: -32,  // Increased from -24 to accommodate larger logo
             left: 24,
-            width: 56,
-            height: 56,
+            width: 80,    // Increased from 56
+            height: 80,   // Increased from 56
             borderRadius: "50%",
             border: "3px solid white",
             backgroundColor: "white",
@@ -153,6 +153,7 @@ const BusinessCard = ({
               width: "100%",
               height: "100%",
               objectFit: "contain",
+              p: 0.5,     // Added some padding to prevent logo from touching edges
             }}
           />
         </Box>
@@ -183,8 +184,8 @@ const BusinessCard = ({
         </Box>
       </Box>
 
-      {/* Content */}
-      <Box sx={{ p: 3, pt: 4 }}>
+      {/* Content - Adjusted padding-top to accommodate larger logo */}
+      <Box sx={{ p: 3, pt: 5 }}>  {/* Increased pt from 4 to 5 */}
         <Typography 
           variant="h6" 
           fontWeight={600} 

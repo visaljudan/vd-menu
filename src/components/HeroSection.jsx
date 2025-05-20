@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { ExploreOutlined, KeyboardArrowDown } from '@mui/icons-material';
-
+import img from "../assets/pour.png"
 // Styled components for better organization and reusability
 const HeroWrapper = styled(Box)(({ theme }) => ({
   position: 'relative',
@@ -30,7 +30,7 @@ const ParallaxBackground = styled(Box)(({ theme }) => ({
   left: 0,
   width: '100%',
   height: '100%',
-  backgroundImage: 'url(https://i.pinimg.com/736x/86/39/93/8639931b444f3608df252f45dabe8eed.jpg)',
+  backgroundImage: {img},
   backgroundSize: 'cover',
   backgroundPosition: 'center',
   transform: 'scale(1.1)', // Slightly larger for parallax effect

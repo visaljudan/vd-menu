@@ -108,7 +108,7 @@ const CartPage = () => {
 
   const sendToTelegramBot = async (orderData) => {
     const botToken = "8024094916:AAGbPgoaBeYlMboDf_PEDyUAprmSmBTIPIs";
-    const chatId = 6164282213;
+    const chatId = 864122022;
 
     if (!botToken || !chatId) {
       throw new Error("Telegram bot configuration is missing");

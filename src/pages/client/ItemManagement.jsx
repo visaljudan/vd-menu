@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
   Button,
@@ -40,6 +40,20 @@ import api from "../../api/axiosConfig";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { storage } from "../../firebase";
 
+// Constants
+const INITIAL_FORM_STATE = {
+  name: "",
+  description: "",
+  businessId: "",
+  category: "",
+  image: null,
+  price: "",
+  status: "active",
+};
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+// Sub-components
 const ConfirmDialog = ({ message, onConfirm, onClose, open }) => (
   <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
     <DialogTitle sx={{ bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider' }}>
@@ -59,52 +73,61 @@ const ConfirmDialog = ({ message, onConfirm, onClose, open }) => (
   </Dialog>
 );
 
-const initialFormState = {
-  name: "",
-  description: "",
-  businessId: "",
-  category: "",
-  image: null,
-  price: "",
-  status: "active",
-};
-
 const ItemManagement = () => {
   const theme = useTheme();
   const { currentUser } = useSelector((state) => state.user);
   const user = currentUser?.user;
-  const token = currentUser?.token;
 
-  const title = "Item Management";
-  const [items, setItems] = useState([]);
-  const [businesses, setBusinesses] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [dialogCategories, setDialogCategories] = useState([]);
-  const [totalItems, setTotalItems] = useState(0);
-  const [pageNumber, setPageNumber] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [open, setOpen] = useState(false);
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [deleteId, setDeleteId] = useState(null);
-  const [editingItem, setEditingItem] = useState(null);
-  const [form, setForm] = useState(initialFormState);
-  const [formErrors, setFormErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
-
-  const [filters, setFilters] = useState({
-    status: "All",
-    business: "",
-    category: "",
+  // State management
+  const [state, setState] = useState({
+    items: [],
+    businesses: [],
+    categories: [],
+    dialogCategories: [],
+    totalItems: 0,
+    pageNumber: 1,
+    pageSize: 10,
+    searchQuery: "",
+    open: false,
+    confirmOpen: false,
+    deleteId: null,
+    editingItem: null,
+    form: INITIAL_FORM_STATE,
+    formErrors: {},
+    isSubmitting: false,
+    isLoading: false,
+    error: null,
+    uploadProgress: 0,
+    isUploading: false,
+    filters: {
+      status: "All",
+      business: "",
+      category: "",
+    }
   });
 
+  // Destructure state for easier access
+  const {
+    items, businesses, categories, dialogCategories, totalItems,
+    pageNumber, pageSize, searchQuery, open, confirmOpen, deleteId,
+    editingItem, form, formErrors, isSubmitting, isLoading, error,
+    uploadProgress, isUploading, filters
+  } = state;
+
+  // Memoized filtered items
+  const filteredItems = useMemo(() => {
+    return items.filter((item) => {
+      const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesBusiness = !filters.business || item.businessId?._id === filters.business;
+      const matchesCategory = !filters.category || item.categoryId?._id === filters.category;
+      return matchesSearch && matchesBusiness && matchesCategory;
+    });
+  }, [items, searchQuery, filters.business, filters.category]);
+
+  // API calls
   const fetchItems = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+    setState(prev => ({ ...prev, isLoading: true, error: null }));
+    
     const params = {
       page: pageNumber,
       size: pageSize,
@@ -114,55 +137,74 @@ const ItemManagement = () => {
       categoryId: filters.category || undefined,
     };
 
-    Object.keys(params).forEach(
-      (key) => params[key] === undefined && delete params[key]
-    );
-
     try {
       const response = await api.get("/api/v1/items", { params });
       const data = response.data.data;
-      setItems(data.data || []);
-      setTotalItems(data.total || 0);
+      setState(prev => ({
+        ...prev,
+        items: data.data || [],
+        totalItems: data.total || 0,
+        isLoading: false
+      }));
     } catch (err) {
-      setError(
-        `Failed to fetch items: ${err.response?.data?.message || err.message}`
-      );
-      setItems([]);
-      setTotalItems(0);
-    } finally {
-      setIsLoading(false);
+      setState(prev => ({
+        ...prev,
+        error: `Failed to fetch items: ${err.response?.data?.message || err.message}`,
+        items: [],
+        totalItems: 0,
+        isLoading: false
+      }));
     }
-  }, [pageNumber, pageSize, searchQuery, filters.business, filters.category, user._id]);
+  }, [pageNumber, pageSize, searchQuery, filters.business, filters.category, user?._id]);
 
   const fetchBusinesses = useCallback(async () => {
     try {
       const response = await api.get("/api/v1/businesses");
-      setBusinesses(response.data.data.data || []);
+      setState(prev => ({
+        ...prev,
+        businesses: response.data.data.data || []
+      }));
     } catch (err) {
-      setError(
-        `Failed to fetch businesses: ${err.response?.data?.message || err.message}`
-      );
-      setBusinesses([]);
+      setState(prev => ({
+        ...prev,
+        error: `Failed to fetch businesses: ${err.response?.data?.message || err.message}`,
+        businesses: []
+      }));
     }
   }, []);
 
-  const fetchCategoriesForBusiness = useCallback(async (businessId) => {
+  const fetchCategories = useCallback(async (businessId, isDialog = false) => {
     if (!businessId) {
-      setDialogCategories([]);
+      setState(prev => ({
+        ...prev,
+        [isDialog ? 'dialogCategories' : 'categories']: []
+      }));
       return;
     }
+
     try {
       const response = await api.get(`/api/v1/categories?businessId=${businessId}`);
-      setDialogCategories(response.data.data.data || []);
-    } catch (err) {
-      setFormErrors((prev) => ({
+      setState(prev => ({
         ...prev,
-        category: "Could not load categories",
+        [isDialog ? 'dialogCategories' : 'categories']: response.data.data.data || [],
+        formErrors: isDialog ? {
+          ...prev.formErrors,
+          category: response.data.data.data?.length ? null : "No categories available"
+        } : prev.formErrors
       }));
-      setDialogCategories([]);
+    } catch (err) {
+      setState(prev => ({
+        ...prev,
+        [isDialog ? 'dialogCategories' : 'categories']: [],
+        formErrors: isDialog ? {
+          ...prev.formErrors,
+          category: "Could not load categories"
+        } : prev.formErrors
+      }));
     }
   }, []);
 
+  // Effects
   useEffect(() => {
     fetchItems();
   }, [fetchItems]);
@@ -172,53 +214,64 @@ const ItemManagement = () => {
   }, [fetchBusinesses]);
 
   useEffect(() => {
-    const fetchFilterCategories = async (businessId) => {
-      if (!businessId) {
-        setCategories([]);
-        return;
-      }
-      try {
-        const response = await api.get(`/api/v1/categories?businessId=${businessId}`);
-        setCategories(response.data.data.data || []);
-      } catch (err) {
-        setCategories([]);
-      }
-    };
-
     if (filters.business) {
-      fetchFilterCategories(filters.business);
+      fetchCategories(filters.business);
+      setState(prev => ({
+        ...prev,
+        filters: {
+          ...prev.filters,
+          category: ""
+        }
+      }));
     } else {
-      setCategories([]);
+      setState(prev => ({
+        ...prev,
+        categories: []
+      }));
     }
-    setFilters((prev) => ({ ...prev, category: "" }));
-  }, [filters.business]);
+  }, [filters.business, fetchCategories]);
 
   useEffect(() => {
     if (form.businessId) {
-      fetchCategoriesForBusiness(form.businessId);
+      fetchCategories(form.businessId, true);
     } else {
-      setDialogCategories([]);
+      setState(prev => ({
+        ...prev,
+        dialogCategories: []
+      }));
     }
-  }, [form.businessId, fetchCategoriesForBusiness]);
+  }, [form.businessId, fetchCategories]);
 
+  // Handlers
   const handleFormChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => {
-      const newState = { ...prev, [name]: value };
+    
+    setState(prev => {
+      const newForm = { ...prev.form, [name]: value };
       if (name === "businessId") {
-        newState.category = "";
+        newForm.category = "";
       }
-      return newState;
+      
+      return {
+        ...prev,
+        form: newForm,
+        formErrors: prev.formErrors[name] ? {
+          ...prev.formErrors,
+          [name]: null
+        } : prev.formErrors
+      };
     });
-    if (formErrors[name]) {
-      setFormErrors((prev) => ({ ...prev, [name]: null }));
-    }
   };
 
   const uploadImage = async (file) => {
     if (!file) throw new Error("No file selected");
-    setIsUploading(true);
-    setUploadProgress(0);
+    
+    setState(prev => ({
+      ...prev,
+      isUploading: true,
+      uploadProgress: 0
+    }));
+
     const storageRef = ref(storage, `vd-menu/${Date.now()}_${file.name}`);
     const uploadTask = uploadBytesResumable(storageRef, file);
 
@@ -226,26 +279,32 @@ const ItemManagement = () => {
       uploadTask.on(
         "state_changed",
         (snapshot) => {
-          const progress =
-            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setUploadProgress(progress);
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          setState(prev => ({ ...prev, uploadProgress: progress }));
         },
         (error) => {
-          console.error("Firebase upload error:", error);
-          setIsUploading(false);
-          setUploadProgress(0);
+          setState(prev => ({
+            ...prev,
+            isUploading: false,
+            uploadProgress: 0
+          }));
           reject(error);
         },
         async () => {
           try {
             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            setIsUploading(false);
-            setUploadProgress(100);
+            setState(prev => ({
+              ...prev,
+              isUploading: false,
+              uploadProgress: 100
+            }));
             resolve(downloadURL);
           } catch (error) {
-            console.error("Error getting download URL:", error);
-            setIsUploading(false);
-            setUploadProgress(0);
+            setState(prev => ({
+              ...prev,
+              isUploading: false,
+              uploadProgress: 0
+            }));
             reject(error);
           }
         }
@@ -255,36 +314,62 @@ const ItemManagement = () => {
 
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
-    setFormErrors((prev) => ({ ...prev, image: null }));
+    
+    setState(prev => ({
+      ...prev,
+      formErrors: {
+        ...prev.formErrors,
+        image: null
+      }
+    }));
 
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setFormErrors((prev) => ({
-          ...prev,
-          image: "File size must be under 5MB.",
-        }));
-        return;
-      }
-      if (!file.type.startsWith("image/")) {
-        setFormErrors((prev) => ({
-          ...prev,
-          image: "Invalid file type. Please select an image.",
-        }));
-        return;
-      }
+    if (!file) return;
 
-      try {
-        const imageUrl = await uploadImage(file);
-        setForm((prev) => ({ ...prev, image: imageUrl }));
-      } catch (error) {
-        console.error("Image upload failed:", error);
-        setFormErrors((prev) => ({
-          ...prev,
-          image: `Upload failed: ${error.message}`,
-        }));
-        setForm((prev) => ({ ...prev, image: null }));
-        e.target.value = null;
-      }
+    // Validate file
+    if (file.size > MAX_FILE_SIZE) {
+      setState(prev => ({
+        ...prev,
+        formErrors: {
+          ...prev.formErrors,
+          image: "File size must be under 5MB."
+        }
+      }));
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setState(prev => ({
+        ...prev,
+        formErrors: {
+          ...prev.formErrors,
+          image: "Invalid file type. Please select an image."
+        }
+      }));
+      return;
+    }
+
+    try {
+      const imageUrl = await uploadImage(file);
+      setState(prev => ({
+        ...prev,
+        form: {
+          ...prev.form,
+          image: imageUrl
+        }
+      }));
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        formErrors: {
+          ...prev.formErrors,
+          image: `Upload failed: ${error.message}`
+        },
+        form: {
+          ...prev.form,
+          image: null
+        }
+      }));
+      e.target.value = null;
     }
   };
 
@@ -294,21 +379,22 @@ const ItemManagement = () => {
     if (!form.category) errors.category = "Category is required";
     if (!form.name.trim()) errors.name = "Name is required";
     if (!form.description.trim()) errors.description = "Description is required";
+    
     const price = parseFloat(form.price);
     if (isNaN(price)) {
       errors.price = "Price must be a number";
     } else if (price < 0) {
       errors.price = "Price cannot be negative";
     }
-    setFormErrors(errors);
+
+    setState(prev => ({ ...prev, formErrors: errors }));
     return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async () => {
-    setError(null);
     if (!validateForm()) return;
 
-    setIsSubmitting(true);
+    setState(prev => ({ ...prev, isSubmitting: true, error: null }));
 
     const itemData = {
       name: form.name.trim(),
@@ -321,111 +407,134 @@ const ItemManagement = () => {
     };
 
     try {
-      let response;
       if (editingItem) {
-        response = await api.patch(`/api/v1/items/${editingItem._id}`, itemData);
+        await api.patch(`/api/v1/items/${editingItem._id}`, itemData);
       } else {
-        response = await api.post("/api/v1/items", itemData);
+        await api.post("/api/v1/items", itemData);
       }
 
-      setOpen(false);
+      setState(prev => ({
+        ...prev,
+        open: false,
+        isSubmitting: false
+      }));
       resetFormAndEditingState();
       fetchItems();
     } catch (err) {
-      const apiError = err.response?.data?.message || err.message;
-      setError(`Failed to save item: ${apiError}`);
-    } finally {
-      setIsSubmitting(false);
+      setState(prev => ({
+        ...prev,
+        error: `Failed to save item: ${err.response?.data?.message || err.message}`,
+        isSubmitting: false
+      }));
     }
   };
 
   const handleEdit = (item) => {
-    setEditingItem(item);
-    setForm({
-      name: item.name || "",
-      description: item.description || "",
-      businessId: item.businessId?._id || "",
-      category: item.categoryId?._id || "",
-      price: item.price?.toString() || "",
-      status: item.status || "active",
-      image: item.image || null,
-    });
-    setFormErrors({});
-    setError(null);
-    setOpen(true);
+    setState(prev => ({
+      ...prev,
+      editingItem: item,
+      form: {
+        name: item.name || "",
+        description: item.description || "",
+        businessId: item.businessId?._id || "",
+        category: item.categoryId?._id || "",
+        price: item.price?.toString() || "",
+        status: item.status || "active",
+        image: item.image || null,
+      },
+      formErrors: {},
+      error: null,
+      open: true
+    }));
   };
 
   const resetFormAndEditingState = () => {
-    setForm(initialFormState);
-    setEditingItem(null);
-    setFormErrors({});
-    setError(null);
-    setDialogCategories([]);
-    setUploadProgress(0);
-    setIsUploading(false);
+    setState(prev => ({
+      ...prev,
+      form: INITIAL_FORM_STATE,
+      editingItem: null,
+      formErrors: {},
+      error: null,
+      dialogCategories: [],
+      uploadProgress: 0,
+      isUploading: false
+    }));
   };
 
   const handleDeleteRequest = (itemId) => {
-    setDeleteId(itemId);
-    setConfirmOpen(true);
-    setError(null);
+    setState(prev => ({
+      ...prev,
+      deleteId: itemId,
+      confirmOpen: true,
+      error: null
+    }));
   };
 
   const handleDeleteConfirm = async () => {
-    setError(null);
+    setState(prev => ({ ...prev, error: null }));
+
     try {
       await api.delete(`/api/v1/items/${deleteId}`);
-      setConfirmOpen(false);
-      setDeleteId(null);
+      
+      setState(prev => ({
+        ...prev,
+        confirmOpen: false,
+        deleteId: null
+      }));
 
       if (items.length === 1 && pageNumber > 1) {
-        setPageNumber(pageNumber - 1);
+        setState(prev => ({ ...prev, pageNumber: prev.pageNumber - 1 }));
       } else {
         fetchItems();
       }
     } catch (err) {
-      setError(
-        `Failed to delete item: ${err.response?.data?.message || err.message}`
-      );
-      setConfirmOpen(false);
+      setState(prev => ({
+        ...prev,
+        error: `Failed to delete item: ${err.response?.data?.message || err.message}`,
+        confirmOpen: false
+      }));
     }
   };
 
   const handleCloseDialog = () => {
-    setOpen(false);
+    setState(prev => ({ ...prev, open: false }));
     resetFormAndEditingState();
   };
 
   const handleOpenAddDialog = () => {
     resetFormAndEditingState();
-    setOpen(true);
+    setState(prev => ({ ...prev, open: true }));
   };
 
   const handlePageChange = (event, newPage) => {
-    setPageNumber(newPage + 1);
+    setState(prev => ({ ...prev, pageNumber: newPage + 1 }));
   };
 
   const handleRowsPerPageChange = (event) => {
-    setPageSize(parseInt(event.target.value, 10));
-    setPageNumber(1);
+    setState(prev => ({
+      ...prev,
+      pageSize: parseInt(event.target.value, 10),
+      pageNumber: 1
+    }));
   };
 
-  const filteredItems = items?.filter((item) => {
-    const matchesSearch = item.name
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    const matchesBusiness =
-      !filters.business || item.businessId?._id === filters.business;
-    const matchesCategory =
-      !filters.category || item.categoryId?._id === filters.category;
-    return matchesSearch && matchesBusiness && matchesCategory;
-  });
+  const handleFilterChange = (name, value) => {
+    setState(prev => ({
+      ...prev,
+      filters: {
+        ...prev.filters,
+        [name]: value,
+        ...(name === 'business' && { category: "" })
+      },
+      pageNumber: 1
+    }));
+  };
 
   return (
     <MainLayout>
       <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
         <Helmet>
-          <title>{title}</title>
+          <title>Item Management</title>
         </Helmet>
         
         {/* Header Section */}
@@ -433,7 +542,7 @@ const ItemManagement = () => {
           <CardContent>
             <Box display="flex" justifyContent="space-between" alignItems="center">
               <Typography variant="h5" fontWeight="600" color="text.primary">
-                {title}
+                Item Management
               </Typography>
               <Button
                 variant="contained"
@@ -456,7 +565,7 @@ const ItemManagement = () => {
           <Alert 
             severity="error" 
             sx={{ mb: 3 }}
-            onClose={() => setError(null)}
+            onClose={() => setState(prev => ({ ...prev, error: null }))}
           >
             {error}
           </Alert>
@@ -473,7 +582,7 @@ const ItemManagement = () => {
                   variant="outlined"
                   size="small"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => setState(prev => ({ ...prev, searchQuery: e.target.value }))}
                   InputProps={{
                     sx: { borderRadius: 1 }
                   }}
@@ -487,18 +596,11 @@ const ItemManagement = () => {
                   variant="outlined"
                   size="small"
                   value={filters.business}
-                  onChange={(e) => {
-                    setFilters((prev) => ({
-                      ...prev,
-                      business: e.target.value,
-                      category: "",
-                    }));
-                    setPageNumber(1);
-                  }}
+                  onChange={(e) => handleFilterChange('business', e.target.value)}
                   disabled={isLoading || businesses.length === 0}
                 >
                   <MenuItem value="">All Businesses</MenuItem>
-                  {businesses?.map((b) => (
+                  {businesses.map((b) => (
                     <MenuItem key={b._id} value={b._id}>
                       {b.name}
                     </MenuItem>
@@ -513,14 +615,11 @@ const ItemManagement = () => {
                   variant="outlined"
                   size="small"
                   value={filters.category}
-                  onChange={(e) => {
-                    setFilters((prev) => ({ ...prev, category: e.target.value }));
-                    setPageNumber(1);
-                  }}
+                  onChange={(e) => handleFilterChange('category', e.target.value)}
                   disabled={isLoading || !filters.business || categories.length === 0}
                 >
                   <MenuItem value="">All Categories</MenuItem>
-                  {categories?.map((c) => (
+                  {categories.map((c) => (
                     <MenuItem key={c._id} value={c._id}>
                       {c.name}
                     </MenuItem>
@@ -553,7 +652,7 @@ const ItemManagement = () => {
                       <Typography variant="body1">Loading Items...</Typography>
                     </TableCell>
                   </TableRow>
-                ) : filteredItems?.length > 0 ? (
+                ) : filteredItems.length > 0 ? (
                   filteredItems.map((item) => (
                     <TableRow key={item._id} hover>
                       <TableCell>
@@ -668,7 +767,7 @@ const ItemManagement = () => {
           </DialogTitle>
           <DialogContent sx={{ pt: 3 }}>
             {error && (
-              <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+              <Alert severity="error" sx={{ mb: 3 }} onClose={() => setState(prev => ({ ...prev, error: null }))}>
                 {error}
               </Alert>
             )}
@@ -699,6 +798,7 @@ const ItemManagement = () => {
                   ))}
                 </TextField>
               </Grid>
+
               <Grid item xs={12} sm={6}>
                 <TextField
                   select
@@ -710,11 +810,7 @@ const ItemManagement = () => {
                   required
                   error={!!formErrors.category}
                   helperText={formErrors.category}
-                  disabled={
-                    isSubmitting ||
-                    !form.businessId ||
-                    dialogCategories.length === 0
-                  }
+                  disabled={isSubmitting || !form.businessId || dialogCategories.length === 0}
                   size="small"
                   sx={{ mb: 2 }}
                 >
@@ -728,6 +824,7 @@ const ItemManagement = () => {
                   ))}
                 </TextField>
               </Grid>
+
               <Grid item xs={12}>
                 <TextField
                   fullWidth
@@ -743,6 +840,7 @@ const ItemManagement = () => {
                   sx={{ mb: 2 }}
                 />
               </Grid>
+
               <Grid item xs={12}>
                 <TextField
                   fullWidth
@@ -760,11 +858,13 @@ const ItemManagement = () => {
                   sx={{ mb: 2 }}
                 />
               </Grid>
+
               <Grid item xs={12}>
                 <Card variant="outlined" sx={{ p: 2, mb: 2 }}>
                   <Typography variant="subtitle2" gutterBottom>
                     Item Image
                   </Typography>
+                  
                   <Box
                     sx={{
                       display: 'flex',
@@ -793,7 +893,13 @@ const ItemManagement = () => {
                         <Button
                           variant="outlined"
                           color="error"
-                          onClick={() => setForm(prev => ({ ...prev, image: null }))}
+                          onClick={() => setState(prev => ({
+                            ...prev,
+                            form: {
+                              ...prev.form,
+                              image: null
+                            }
+                          }))}
                           disabled={isSubmitting}
                         >
                           Remove Image
@@ -824,6 +930,7 @@ const ItemManagement = () => {
                       </>
                     )}
                   </Box>
+
                   {isUploading && (
                     <Box sx={{ width: '100%', mt: 2 }}>
                       <LinearProgress variant="determinate" value={uploadProgress} />
@@ -832,6 +939,7 @@ const ItemManagement = () => {
                       </Typography>
                     </Box>
                   )}
+
                   {formErrors.image && (
                     <Typography color="error" variant="caption">
                       {formErrors.image}
@@ -839,6 +947,7 @@ const ItemManagement = () => {
                   )}
                 </Card>
               </Grid>
+
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
@@ -853,14 +962,13 @@ const ItemManagement = () => {
                   disabled={isSubmitting}
                   size="small"
                   InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">$</InputAdornment>
-                    ),
+                    startAdornment: <InputAdornment position="start">$</InputAdornment>,
                     inputProps: { step: "0.01", min: "0" },
                   }}
                   sx={{ mb: 2 }}
                 />
               </Grid>
+
               <Grid item xs={12} sm={6}>
                 <TextField
                   select
@@ -912,7 +1020,7 @@ const ItemManagement = () => {
           open={confirmOpen}
           message="Are you sure you want to delete this item? This action cannot be undone."
           onConfirm={handleDeleteConfirm}
-          onClose={() => setConfirmOpen(false)}
+          onClose={() => setState(prev => ({ ...prev, confirmOpen: false }))}
         />
       </Box>
     </MainLayout>

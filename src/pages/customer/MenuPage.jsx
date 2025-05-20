@@ -22,7 +22,7 @@ import {
   IconButton,
   Snackbar
 } from "@mui/material";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link , useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import api from "../../api/axiosConfig";
 import Loading from "../../components/Loading";
@@ -38,6 +38,8 @@ import RestaurantIcon from '@mui/icons-material/Restaurant';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import StorefrontIcon from '@mui/icons-material/Storefront';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import LinkIcon from '@mui/icons-material/Link';
 
 const MenuPage = () => {
   const theme = useTheme();
@@ -55,6 +57,7 @@ const MenuPage = () => {
   const [favorites, setFavorites] = useState({});
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
+  const navigate = useNavigate();
 
   // Fetch business details
   const fetchBusiness = useCallback(async () => {
@@ -188,8 +191,20 @@ const MenuPage = () => {
           
           {/* Back button */}
           <IconButton 
-            component={Link} 
-            to="#" 
+              sx={{ 
+                position: 'absolute', 
+                top: 16, 
+                left: 16, 
+                bgcolor: 'rgba(255,255,255,0.9)',
+                '&:hover': { bgcolor: 'rgba(255,255,255,1)' }
+              }}
+              onClick={() => navigate(-1)} // Go back one step in history
+            >
+              <ArrowBackIcon />
+           </IconButton>
+          
+          {/* Share button */}
+          <IconButton 
             sx={{ 
               position: 'absolute', 
               top: 16, 
@@ -197,11 +212,11 @@ const MenuPage = () => {
               bgcolor: 'rgba(255,255,255,0.9)',
               '&:hover': { bgcolor: 'rgba(255,255,255,1)' }
             }}
+            onClick={() => navigate(-1)} // Go back one step in history
           >
             <ArrowBackIcon />
           </IconButton>
           
-          {/* Share button */}
           <IconButton 
             sx={{ 
               position: 'absolute', 
@@ -210,8 +225,13 @@ const MenuPage = () => {
               bgcolor: 'rgba(255,255,255,0.9)',
               '&:hover': { bgcolor: 'rgba(255,255,255,1)' }
             }}
+            onClick={() => {
+              navigator.clipboard.writeText(window.location.href);
+              // Optional: Add a toast/snackbar notification
+              alert('Link copied to clipboard!');
+            }}
           >
-            <ShareIcon />
+            <LinkIcon /> {/* or <LinkIcon /> */}
           </IconButton>
         </Box>
         
@@ -502,7 +522,7 @@ const MenuPage = () => {
                             boxShadow: 2,
                           }}
                         >
-                          Add to Cart
+                          Add to Order
                         </Button>
                         
                         <Button
