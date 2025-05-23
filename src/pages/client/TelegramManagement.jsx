@@ -10,7 +10,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   TextField,
   Dialog,
   DialogActions,
@@ -24,6 +23,9 @@ import {
   Tooltip,
   Avatar,
   Chip,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
 import {
   Edit,
@@ -33,8 +35,9 @@ import {
   Telegram,
   CheckCircle,
   Cancel,
+  ExpandMore,
+  Info,
 } from "@mui/icons-material";
-import { styled } from "@mui/system";
 import MainLayout from "../../layouts/MainLayout";
 import api from "../../api/axiosConfig";
 
@@ -52,7 +55,7 @@ const StatusChip = ({ status }) => {
 };
 
 const TelegramManagement = () => {
-  const [telegrams, setTelegrams] = useState([]);
+  const [telegrams, setTelegrams] = useState({ data: [] });
   const [loading, setLoading] = useState(false);
   const [dialogLoading, setDialogLoading] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
@@ -68,7 +71,7 @@ const TelegramManagement = () => {
     setLoading(true);
     try {
       const response = await api.get("api/v1/telegrams");
-      setTelegrams(response.data.data || []);
+      setTelegrams(response.data.data);
     } catch (error) {
       console.error("Failed to fetch telegrams:", error);
       setNotification({
@@ -76,7 +79,7 @@ const TelegramManagement = () => {
         message: `Failed to fetch telegrams: ${error.message || "Unknown error"}`,
         severity: "error",
       });
-      setTelegrams([]);
+      setTelegrams();
     } finally {
       setLoading(false);
     }
@@ -210,6 +213,45 @@ const TelegramManagement = () => {
           </Button>
         </Box>
 
+        <Accordion sx={{ mb: 3 }}>
+          <AccordionSummary expandIcon={<ExpandMore />}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Info color="primary" sx={{ mr: 1 }} />
+              <Typography>How to get Telegram Chat ID</Typography>
+            </Box>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Typography variant="body1" gutterBottom>
+              To get your Telegram Chat ID:
+            </Typography>
+            <ol>
+              <li>
+                <Typography variant="body1">
+                  Start a conversation with <strong>@userinfobot</strong> on Telegram
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body1">
+                  Send the <strong>/start</strong> command to the bot
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body1">
+                  The bot will reply with your Chat ID (a number)
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body1">
+                  Copy that number and paste it in the Chat ID field
+                </Typography>
+              </li>
+            </ol>
+            <Typography variant="body2" color="text.secondary">
+              Note: For group chats, you'll need to add the bot to the group and use the ID it provides.
+            </Typography>
+          </AccordionDetails>
+        </Accordion>
+
         <Card sx={{ p: 2, mb: 3, borderRadius: 2 }}>
           <TextField
             variant="outlined"
@@ -244,13 +286,13 @@ const TelegramManagement = () => {
                   <TableRow>
                     <TableCell sx={{ fontWeight: 600 }}>Account</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>Username</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Phone</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Chat ID</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filteredTelegrams?.length > 0 ? (
+                  {filteredTelegrams.length > 0 ? (
                     filteredTelegrams.map((telegram) => (
                       <TableRow
                         key={telegram._id}
@@ -354,12 +396,13 @@ const TelegramManagement = () => {
             />
             <TextField
               margin="normal"
-              label="Phone Number"
+              label="Chat ID"
               fullWidth
               name="phoneNumber"
               value={currentUser?.phoneNumber || ""}
               onChange={handleDialogInputChange}
               sx={{ mb: 2 }}
+              helperText="Get your Chat ID from @userinfobot on Telegram"
             />
             <TextField
               select
