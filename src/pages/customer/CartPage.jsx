@@ -335,7 +335,7 @@ const CartPage = () => {
                   <Typography variant="h6" sx={{ mb: 0.5, fontWeight: 600 }}>
                     {item.name}
                   </Typography>
-                  <Chip
+                  {/* <Chip
                     label="In Stock"
                     size="small"
                     sx={{
@@ -345,7 +345,7 @@ const CartPage = () => {
                       fontWeight: 500,
                       fontSize: "0.75rem",
                     }}
-                  />
+                  /> */}
                 </Box>
               </Box>
             </Grid>

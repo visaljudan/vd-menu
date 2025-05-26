@@ -129,7 +129,7 @@ export default function BusinessManagement() {
     try {
       const response = await api.get("api/v1/businesses");
       setBusinesses(response.data.data.data || []);
-      setTotalItems(response.data.data.total || 0);
+      setTotalItems(response.data.data.tota || 0);
     } catch (err) {
       console.error("Error fetching businesses:", err);
       setError(

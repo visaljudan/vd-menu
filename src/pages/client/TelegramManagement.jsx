@@ -227,7 +227,7 @@ const TelegramManagement = () => {
             <ol>
               <li>
                 <Typography variant="body1">
-                  Start a conversation with <strong>@userinfobot</strong> on Telegram
+                  Start a conversation with <strong>@RawDataBot</strong> on Telegram
                 </Typography>
               </li>
               <li>

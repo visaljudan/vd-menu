@@ -265,13 +265,13 @@ const MenuPage = () => {
                   {business?.name || 'Restaurant Name'}
                 </Typography>
                 
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: { xs: 'center', sm: 'flex-start' } }}>
+                {/* <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: { xs: 'center', sm: 'flex-start' } }}>
                   <Rating value={business?.rating || 4.5} precision={0.5} readOnly size="small" />
                   <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
                     {business?.rating || '4.5'} • {business?.reviewCount || '86'} reviews
                   </Typography>
                 </Box>
-                
+                 */}
                 <Stack 
                   direction={{ xs: 'column', sm: 'row' }} 
                   spacing={2}
@@ -284,7 +284,7 @@ const MenuPage = () => {
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     <StorefrontIcon fontSize="small" color="action" sx={{ mr: 0.5 }} />
                     <Typography variant="body2" color="text.secondary">
-                      {business?.cuisine || 'Italian, American'}
+                      {business?.name || 'Italian, American'}
                     </Typography>
                   </Box>
                   
@@ -432,11 +432,11 @@ const MenuPage = () => {
                         }}
                         onClick={() => toggleFavorite(item._id)}
                       >
-                        {favorites[item._id] ? (
+                        {/* {favorites[item._id] ? (
                           <FavoriteIcon color="error" />
                         ) : (
                           <FavoriteBorderIcon />
-                        )}
+                        )} */}
                       </IconButton>
                       
                       {item.discount && (

@@ -91,15 +91,15 @@ const ItemDetailPage = () => {
   };
 
   // Determine status display
-  const getStatusDisplay = (status) => {
-    const statusMap = {
-      active: { text: "In Stock", color: "success" },
-      inactive: { text: "Out of Stock", color: "error" },
-      discontinued: { text: "Discontinued", color: "warning" },
-      preorder: { text: "Pre-Order", color: "info" },
-    };
-    return statusMap[status?.toLowerCase()] || { text: "Unknown", color: "default" };
-  };
+  // const getStatusDisplay = (status) => {
+  //   const statusMap = {
+  //     active: { text: "In Stock", color: "success" },
+  //     inactive: { text: "Out of Stock", color: "error" },
+  //     discontinued: { text: "Discontinued", color: "warning" },
+  //     preorder: { text: "Pre-Order", color: "info" },
+  //   };
+  //   return statusMap[status?.toLowerCase()] || { text: "Unknown", color: "default" };
+  // };
 
   // Loading state UI
   if (loading) {
@@ -185,7 +185,7 @@ const ItemDetailPage = () => {
     );
   }
 
-  const statusInfo = getStatusDisplay(item.status);
+  // const statusInfo = getStatusDisplay(item.status);
 
   return (
     <Fade in={!loading} timeout={800}>
@@ -249,7 +249,7 @@ const ItemDetailPage = () => {
                 )}
                 
                 {/* Status indicator overlay */}
-                <Chip
+                {/* <Chip
                   label={statusInfo.text}
                   color={statusInfo.color}
                   size="medium"
@@ -259,7 +259,7 @@ const ItemDetailPage = () => {
                     left: 16,
                     fontWeight: 'bold'
                   }}
-                />
+                /> */}
               </Box>
             </Grid>
 
@@ -285,7 +285,7 @@ const ItemDetailPage = () => {
                   >
                     {item.name}
                   </Typography>
-                  <Tooltip title={isFavorite ? "Remove from favorites" : "Add to favorites"}>
+                  {/* <Tooltip title={isFavorite ? "Remove from favorites" : "Add to favorites"}>
                     <IconButton
                       aria-label="add to favorites"
                       onClick={() => setIsFavorite(!isFavorite)}
@@ -301,7 +301,7 @@ const ItemDetailPage = () => {
                         <FavoriteBorder />
                       }
                     </IconButton>
-                  </Tooltip>
+                  </Tooltip> */}
                 </Box>
 
                 <Typography 
