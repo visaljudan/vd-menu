@@ -124,7 +124,7 @@ const NAVIGATION = [
     roles: ["admin"],
   },
   {
-    segment: "client/settings",
+    segment: "client/setting",
     title: "Settings",
     icon: <Settings />,
     roles: ["user"],

@@ -29,6 +29,7 @@ import {
   Phone,
   Send
 } from '@mui/icons-material';
+import img from "../assets/Logo_VD_Menu.png"
 
 // Styled components
 const FooterWrapper = styled(Box)(({ theme }) => ({
@@ -125,8 +126,8 @@ const Footer = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const currentYear = new Date().getFullYear();
   
-  const companyName = "Your Company";
-  const companyLogo = "https://i.pinimg.com/736x/12/83/16/1283166bf58b7a77574a51cdeaa68142.jpg";
+  const companyName = "VD Manu";
+  // const companyLogo = "https://i.pinimg.com/736x/12/83/16/1283166bf58b7a77574a51cdeaa68142.jpg";
   
   const quickLinks = [
     { name: 'Home', url: '/' },
@@ -145,9 +146,9 @@ const Footer = () => {
   ];
   
   const socialLinks = [
-    { name: 'Facebook', icon: <Facebook fontSize="small" />, url: 'https://facebook.com' },
+    { name: 'Facebook', icon: <Facebook fontSize="small" />, url: 'https://www.facebook.com/vith.vith.5492216' },
     { name: 'Twitter', icon: <Twitter fontSize="small" />, url: 'https://twitter.com' },
-    { name: 'Instagram', icon: <Instagram fontSize="small" />, url: 'https://instagram.com' },
+    { name: 'Instagram', icon: <Instagram fontSize="small" />, url: 'https://www.instagram.com/__davith_s_/' },
     { name: 'LinkedIn', icon: <LinkedIn fontSize="small" />, url: 'https://linkedin.com' },
     { name: 'YouTube', icon: <YouTube fontSize="small" />, url: 'https://youtube.com' },
   ];
@@ -168,7 +169,7 @@ const Footer = () => {
             <Box sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
               <Box
                 component="img"
-                src={companyLogo}
+                src={img}
                 alt={companyName}
                 sx={{ 
                   height: 40, 
@@ -201,14 +202,14 @@ const Footer = () => {
               <ContactItem>
                 <Email fontSize="small" />
                 <FooterLink href="mailto:info@yourcompany.com">
-                  info@yourcompany.com
+                  vdmanu@gmail.com
                 </FooterLink>
               </ContactItem>
               
               <ContactItem>
                 <Phone fontSize="small" />
                 <FooterLink href="tel:+1234567890">
-                  +1 (234) 567-890
+                  +855 964679123
                 </FooterLink>
               </ContactItem>
             </Box>

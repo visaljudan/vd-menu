@@ -27,7 +27,7 @@ import ItemDetailPage from "./pages/customer/ItemDetailPage";
 import MenuPage from "./pages/customer/MenuPage";
 import { CartProvider } from "./contexts/CartContext"; // Cart Context
 import QRCodeGenerator from "./pages/customer/QRCodePage"
-
+import SettingPage from "./pages/client/SettingPage";
 
 const App = () => {
   return (
@@ -52,6 +52,7 @@ const App = () => {
            
             <Route path="/QRCodePage" element={<QRCodeGenerator/>} />
             {/* Client */}
+            <Route path="/client/settings" element={<SettingPage />} />
             <Route path="/client/dashboard" element={<Dashboard />} />
             <Route
               path="/client/telegram-management"
