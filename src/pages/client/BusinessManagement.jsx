@@ -22,8 +22,8 @@ import {
   Tooltip,
   TablePagination,
   CircularProgress,
-  Grid, 
-   // Added for loading indication
+  Grid,
+  Alert,
 } from "@mui/material";
 import { Edit, Add, Close, CloudUpload } from "@mui/icons-material";
 import DeleteTwoToneIcon from "@mui/icons-material/DeleteTwoTone";
@@ -59,7 +59,6 @@ const INITIAL_FORM_STATE = {
 };
 
 // --- Helper Components ---
-
 const ConfirmDialog = ({ message, onConfirm, onClose, open, isLoading }) => (
   <Dialog open={open} onClose={!isLoading ? onClose : undefined}>
     <DialogTitle>Confirmation</DialogTitle>
@@ -90,13 +89,7 @@ export default function BusinessManagement() {
   const token = currentUser?.token;
 
   const [telegrams, setTelegrams] = useState([]);
-  const [errors, setErrors] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [notification, setNotification] = useState({
-    open: false,
-    message: "",
-    severity: "success",
-  });
+  const [errors, setErrors] = useState({});
   const [businesses, setBusinesses] = useState([]);
   const [totalItems, setTotalItems] = useState(0);
   const [pageNumber, setPageNumber] = useState(1);
@@ -127,27 +120,44 @@ export default function BusinessManagement() {
     if (filters.status !== "All") params.append("status", filters.status);
 
     try {
-      const response = await api.get("api/v1/businesses");
-      setBusinesses(response.data.data.data || []);
-      setTotalItems(response.data.data.tota || 0);
+      const response = await api.get(`${API_ENDPOINT}?${params.toString()}`);
+      setBusinesses(response.data.data || []);
+      setTotalItems(response.data.total || 0);
     } catch (err) {
       console.error("Error fetching businesses:", err);
       setError(
-        `Failed to fetch businesses: ${err.response?.data?.message || err.message || "Please try again."}`
+        `Failed to fetch businesses: ${
+          err.response?.data?.message || err.message || "Please try again."
+        }`
       );
       setBusinesses([]);
       setTotalItems(0);
     } finally {
       setIsLoading(false);
     }
-  }, [token, pageNumber, pageSize, searchQuery, filters.status]);
+  }, [pageNumber, pageSize, searchQuery, filters.status]);
+
+  const fetchTelegrams = useCallback(async () => {
+    try {
+      const response = await api.get("api/v1/telegrams");
+      setTelegrams(response.data.data || []);
+    } catch (error) {
+      console.error("Failed to fetch telegrams:", error);
+      setError(
+        `Failed to fetch telegrams: ${
+          error.message || "Unknown error"
+        }`
+      );
+      setTelegrams([]);
+    }
+  }, []);
 
   useEffect(() => {
     fetchBusinesses();
-  }, [fetchBusinesses]);
+    fetchTelegrams();
+  }, [fetchBusinesses, fetchTelegrams]);
 
   // --- Event Handlers ---
-
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
     setPageNumber(1);
@@ -166,6 +176,7 @@ export default function BusinessManagement() {
     setFormState(INITIAL_FORM_STATE);
     setEditingBusiness(null);
     setFormError(null);
+    setErrors({});
   };
 
   const handleOpenAddDialog = () => {
@@ -174,16 +185,15 @@ export default function BusinessManagement() {
   };
 
   const handleOpenEditDialog = (business) => {
-    resetForm();
     setEditingBusiness(business);
     setFormState({
-      telegramId: business.telegramId._id ?? "",
-      name: business.name ?? "",
-      description: business.description ?? "",
-      location: business.location ?? "",
-      status: business.status ?? "Active",
-      logo: business.logo,
-      image: business.image,
+      telegramId: business.telegramId?._id || "",
+      name: business.name || "",
+      description: business.description || "",
+      location: business.location || "",
+      status: business.status || "active",
+      logo: business.logo || null,
+      image: business.image || null,
     });
     setAddEditDialogOpen(true);
   };
@@ -197,27 +207,19 @@ export default function BusinessManagement() {
     setIsSubmitting(true);
     setFormError(null);
 
-    const formData = new FormData();
-
-    Object.entries(formState).forEach(([key, value]) => {
-      if (
-        value !== null &&
-        value !== undefined &&
-        !(typeof value === "string" && (key === "logo" || key === "image"))
-      ) {
-        formData.append(key, value);
-      }
-    });
-
     try {
+      let response;
       if (editingBusiness) {
-        await api.patch(`api/v1/businesses/${editingBusiness._id}`, formState);
+        response = await api.patch(
+          `${API_ENDPOINT}/${editingBusiness._id}`,
+          formState
+        );
       } else {
-        await api.post("api/v1/businesses", formState);
+        response = await api.post(API_ENDPOINT, formState);
       }
 
       handleCloseAddEditDialog();
-      fetchBusinesses(false);
+      fetchBusinesses();
     } catch (err) {
       console.error(
         `Error ${editingBusiness ? "updating" : "adding"} business:`,
@@ -250,16 +252,16 @@ export default function BusinessManagement() {
     setError(null);
 
     try {
-      const response = await api.delete(
-        `api/v1/businesses/${businessToDeleteId}`
-      );
+      await api.delete(`${API_ENDPOINT}/${businessToDeleteId}`);
       setBusinessToDeleteId(null);
       handleCloseConfirmDeleteDialog();
-      fetchBusinesses(false);
+      fetchBusinesses();
     } catch (err) {
       console.error("Error deleting business:", err);
       setError(
-        `Failed to delete business: ${err.response?.data?.message || err.message || "Please try again."}`
+        `Failed to delete business: ${
+          err.response?.data?.message || err.message || "Please try again."
+        }`
       );
       handleCloseConfirmDeleteDialog();
     } finally {
@@ -267,33 +269,6 @@ export default function BusinessManagement() {
     }
   };
 
-  // Fetch Telegrams
-  const fetchtelegrams = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await api.get("api/v1/telegrams");
-      setTelegrams(response.data.data);
-    } catch (error) {
-      console.error("Failed to fetch telegrams:", error);
-      setNotification({
-        open: true,
-        message: `Failed to fetch telegrams: ${error.message || "Unknown error"}`,
-        severity: "error",
-      });
-      setTelegrams([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchtelegrams();
-  }, [fetchtelegrams]);
-
-  // --- Render Logic ---
-  const businessesToDisplay = businesses;
-
-  // Upload image
   const uploadImage = async (file) => {
     try {
       if (!file) throw new Error("No file selected");
@@ -305,14 +280,12 @@ export default function BusinessManagement() {
           (snapshot) => {
             const progress =
               (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            // setProgressPercentage(progress);
           },
           (error) => reject(error),
           () => resolve()
         );
       });
       const downloadURL = await getDownloadURL(storageRef);
-      console.log("File available at", downloadURL);
       return downloadURL;
     } catch (error) {
       console.error("Error uploading file:", error);
@@ -322,92 +295,87 @@ export default function BusinessManagement() {
 
   const handleLogoChange = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        setErrors({
-          ...errors,
-          avatar: "File size must be under 2MB.",
-        });
-        return;
-      }
+    if (!file) return;
 
+    if (file.size > 2 * 1024 * 1024) {
+      setErrors({
+        ...errors,
+        logo: "File size must be under 2MB.",
+      });
+      return;
+    }
+
+    try {
       const img = new Image();
       const reader = new FileReader();
-      reader.onload = function (e) {
+      
+      reader.onload = async function (e) {
         img.onload = function () {
-          if (img.width >= 1000) {
+          if (img.width > 1000 || img.height > 1000) {
             setErrors({
               ...errors,
-              avatar: "Image dimensions must be 1000x1000 pixels or smaller.",
+              logo: "Image dimensions must be 1000x1000 pixels or smaller.",
             });
             return;
           }
-
-          uploadImage(file)
-            .then((imageUrl) => {
-              setFormState({ ...formState, logo: imageUrl });
-            })
-            .catch((error) => {
-              console.error("Image upload failed:", error);
-            });
         };
         img.src = e.target.result;
       };
       reader.readAsDataURL(file);
+
+      const imageUrl = await uploadImage(file);
+      setFormState({ ...formState, logo: imageUrl });
+      setErrors({ ...errors, logo: null });
+    } catch (error) {
+      console.error("Image upload failed:", error);
+      setErrors({
+        ...errors,
+        logo: "Failed to upload image. Please try again.",
+      });
     }
   };
 
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        setErrors({
-          ...errors,
-          avatar: "File size must be under 2MB.",
-        });
-        return;
-      }
+    if (!file) return;
 
+    if (file.size > 2 * 1024 * 1024) {
+      setErrors({
+        ...errors,
+        image: "File size must be under 2MB.",
+      });
+      return;
+    }
+
+    try {
       const img = new Image();
       const reader = new FileReader();
-      reader.onload = function (e) {
+      
+      reader.onload = async function (e) {
         img.onload = function () {
-          if (img.width >= 1000) {
+          if (img.width > 1000 || img.height > 1000) {
             setErrors({
               ...errors,
-              avatar: "Image dimensions must be 1000x1000 pixels or smaller.",
+              image: "Image dimensions must be 1000x1000 pixels or smaller.",
             });
             return;
           }
-
-          uploadImage(file)
-            .then((imageUrl) => {
-              setFormState({ ...formState, image: imageUrl });
-            })
-            .catch((error) => {
-              console.error("Image upload failed:", error);
-            });
         };
         img.src = e.target.result;
       };
       reader.readAsDataURL(file);
+
+      const imageUrl = await uploadImage(file);
+      setFormState({ ...formState, image: imageUrl });
+      setErrors({ ...errors, image: null });
+    } catch (error) {
+      console.error("Image upload failed:", error);
+      setErrors({
+        ...errors,
+        image: "Failed to upload image. Please try again.",
+      });
     }
   };
-
-  // useEffect(() => {
-  //   const fetchBusinesses = async () => {
-  //     try {
-  //       const response = await api.get("/api/v1/businesses");
-  //       setBusinesses(response.data.data);
-  //     } catch (error) {
-  //       console.error("Failed to fetch businesses:", error);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   fetchBusinesses();
-  // }, []);
 
   return (
     <MainLayout>
@@ -452,9 +420,9 @@ export default function BusinessManagement() {
         </Box>
         {/* --- Display General Errors --- */}
         {error && (
-          <Typography color="error" sx={{ mb: 2 }} role="alert">
+          <Alert severity="error" sx={{ mb: 2 }}>
             {error}
-          </Typography>
+          </Alert>
         )}
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
           {isLoading ? (
@@ -478,40 +446,30 @@ export default function BusinessManagement() {
                 <Typography>Loading Items...</Typography>
               </Box>
             </Box>
-          ) : totalItems === 0 ? (
-            <Typography color="error" sx={{ mb: 2 }} role="alert">
-              Don't have data yet
+          ) : businesses.length === 0 ? (
+            <Typography color="text.secondary" sx={{ mb: 2 }}>
+              No businesses found
             </Typography>
-          ) : totalItems > 0 ? (
-            businesses.map((item) => (
+          ) : (
+            businesses?.data?.map((item) => (
               <BusinessCard
                 key={item._id}
                 id={item._id}
-                name={item.userId?.name || "No name"}
+                name={item.name || "No name"}
                 description={item.description || "No description"}
                 location={item.location || "Unknown"}
                 photo={item.image || "https://via.placeholder.com/300"}
                 logo={item.logo || "https://via.placeholder.com/100"}
                 companyName={item.name || "Company"}
-                onEdit={() => {
-                  const businessToEdit = businesses.find(
-                    (b) => b._id === item._id
-                  );
-                  if (businessToEdit) handleOpenEditDialog(businessToEdit);
-                }}
+                onEdit={() => handleOpenEditDialog(item)}
                 onDelete={() => handleOpenConfirmDeleteDialog(item._id)}
               />
             ))
-          ) : (
-            <Typography color="error" sx={{ mb: 2 }} role="alert">
-              Loading...
-            </Typography>
           )}
         </Box>
       </Box>
 
-      {/* --- Add/Edit Dialog --- */}
-     {/* --- Add/Edit Business Dialog --- */}
+      {/* --- Add/Edit Business Dialog --- */}
       <Dialog
         open={isAddEditDialogOpen}
         onClose={handleCloseAddEditDialog}
@@ -522,7 +480,7 @@ export default function BusinessManagement() {
           sx: {
             borderRadius: 2,
             boxShadow: (theme) => theme.shadows[5],
-          }
+          },
         }}
       >
         {/* Dialog Header */}
@@ -574,7 +532,7 @@ export default function BusinessManagement() {
                 variant="outlined"
                 InputLabelProps={{ shrink: true }}
               >
-                {telegrams?.data?.map((telegram) => (
+                {telegrams?.map?.((telegram) => (
                   <MenuItem key={telegram._id} value={telegram._id}>
                     {telegram.name}
                   </MenuItem>
@@ -647,9 +605,9 @@ export default function BusinessManagement() {
                     borderStyle: "dashed",
                     borderWidth: 1,
                     borderColor: "divider",
-                    '&:hover': {
+                    "&:hover": {
                       borderColor: "primary.main",
-                    }
+                    },
                   }}
                 >
                   Upload Logo
@@ -661,7 +619,12 @@ export default function BusinessManagement() {
                     hidden
                   />
                 </Button>
-                {formState?.logo && (
+                {errors.logo && (
+                  <Typography color="error" variant="caption">
+                    {errors.logo}
+                  </Typography>
+                )}
+                {formState.logo && (
                   <Box mt={2} textAlign="center">
                     <img
                       src={formState.logo}
@@ -670,7 +633,7 @@ export default function BusinessManagement() {
                         maxHeight: 120,
                         maxWidth: "100%",
                         borderRadius: 1,
-                        border: "1px solid #eee"
+                        border: "1px solid #eee",
                       }}
                     />
                   </Box>
@@ -695,9 +658,9 @@ export default function BusinessManagement() {
                     borderStyle: "dashed",
                     borderWidth: 1,
                     borderColor: "divider",
-                    '&:hover': {
+                    "&:hover": {
                       borderColor: "primary.main",
-                    }
+                    },
                   }}
                 >
                   Upload Image
@@ -709,7 +672,12 @@ export default function BusinessManagement() {
                     hidden
                   />
                 </Button>
-                {formState?.image && (
+                {errors.image && (
+                  <Typography color="error" variant="caption">
+                    {errors.image}
+                  </Typography>
+                )}
+                {formState.image && (
                   <Box mt={2} textAlign="center">
                     <img
                       src={formState.image}
@@ -718,7 +686,7 @@ export default function BusinessManagement() {
                         maxHeight: 120,
                         maxWidth: "100%",
                         borderRadius: 1,
-                        border: "1px solid #eee"
+                        border: "1px solid #eee",
                       }}
                     />
                   </Box>
@@ -743,7 +711,7 @@ export default function BusinessManagement() {
               >
                 {FORM_STATUS_OPTIONS.map((opt) => (
                   <MenuItem key={opt} value={opt}>
-                    {opt}
+                    {opt.charAt(0).toUpperCase() + opt.slice(1)}
                   </MenuItem>
                 ))}
               </TextField>
