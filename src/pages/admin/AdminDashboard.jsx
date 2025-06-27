@@ -1,79 +1,56 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 import {
   Grid,
-  Paper,
   Typography,
   Box,
   CircularProgress,
-  List,
-  ListItem,
-  ListItemText,
   Card,
   CardContent,
-  Divider,
+  Avatar,
   useTheme,
   alpha,
-  Avatar,
-  ListItemAvatar
-} from "@mui/material";
-import {
-  LineChart,
-  Line,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  AreaChart,
-  Area
-} from "recharts";
-import MainLayout from "../../layouts/MainLayout";
-import { Helmet } from "react-helmet";
+  Fade,
+  Alert,
+} from '@mui/material';
+import { Helmet } from 'react-helmet';
+import MainLayout from '../../layouts/MainLayout';
+import api from "../../api/axiosConfig";
+
+// Icons
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import BusinessIcon from '@mui/icons-material/Business';
 import CategoryIcon from '@mui/icons-material/Category';
 import InventoryIcon from '@mui/icons-material/Inventory';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import StoreIcon from '@mui/icons-material/Store';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
-  const [topBusinesses, setTopBusinesses] = useState([]);
   const [loading, setLoading] = useState(true);
-  const title = "Admin Dashboard";
+  const [error, setError] = useState(null);
   const theme = useTheme();
+  
+  const title = 'Admin Dashboard';
 
   useEffect(() => {
-    const mockStats = {
-      users: 1200,
-      businesses: 300,
-      categories: 20,
-      items: 7000,
-      growth: {
-        labels: ["Jan", "Feb", "Mar", "Apr", "May"],
-        users: [100, 200, 300, 600, 1200],
-        items: [500, 1500, 3000, 7000, 7000],
-      },
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get('/api/v1/dashboard');
+        setStats(response.data.data);
+        console.log(response.data.data);
+        setError(null);
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to fetch dashboard data');
+        console.error('Error fetching dashboard data:', err);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    const mockTopBusinesses = [
-      { name: "Tech Store", itemCount: 1200, color: "#1976d2" },
-      { name: "Phone Hub", itemCount: 900, color: "#2e7d32" },
-      { name: "Gadget World", itemCount: 850, color: "#f57c00" },
-      { name: "ElectroKing", itemCount: 700, color: "#7b1fa2" },
-      { name: "SecondZone", itemCount: 670, color: "#c62828" },
-    ];
-
-    // Simulate API call
-    setTimeout(() => {
-      setStats(mockStats);
-      setTopBusinesses(mockTopBusinesses);
-      setLoading(false);
-    }, 800);
+    fetchDashboardData();
   }, []);
 
-  if (loading) {
+  // Loading state
+  if (loading && !stats) {
     return (
       <MainLayout>
         <Helmet>
@@ -83,12 +60,12 @@ const AdminDashboard = () => {
           display="flex"
           justifyContent="center"
           alignItems="center"
-          height="80vh"
+          minHeight="80vh"
           flexDirection="column"
           gap={2}
         >
-          <CircularProgress size={60} />
-          <Typography variant="h6" color="textSecondary">
+          <CircularProgress size={60} thickness={4} />
+          <Typography variant="h6" color="text.secondary">
             Loading dashboard data...
           </Typography>
         </Box>
@@ -96,40 +73,50 @@ const AdminDashboard = () => {
     );
   }
 
-  const chartData = stats.growth.labels.map((label, index) => ({
-    name: label,
-    users: stats.growth.users[index],
-    items: stats.growth.items[index],
-  }));
+  if (error) {
+    return (
+      <MainLayout>
+        <Helmet>
+          <title>{title}</title>
+        </Helmet>
+        <Box sx={{ p: 4 }}>
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        </Box>
+      </MainLayout>
+    );
+  }
 
+  // Summary cards configuration
   const summaryCards = [
-    { 
-      title: "Total Users", 
-      value: stats.users.toLocaleString(), 
-      icon: <PeopleAltIcon />, 
+    {
+      title: 'Total Users',
+      value: stats?.totalUsers?.toLocaleString() || '0',
+      icon: <PeopleAltIcon />,
       color: theme.palette.primary.main,
-      description: "+12% from last month"
+      description: stats?.userGrowth ? `+${stats.userGrowth}% from last month` : '',
     },
-    { 
-      title: "Businesses", 
-      value: stats.businesses.toLocaleString(), 
-      icon: <BusinessIcon />, 
+    {
+      title: 'Businesses',
+      value: stats?.totalBusinesses?.toLocaleString() || '0',
+      icon: <BusinessIcon />,
       color: theme.palette.success.main,
-      description: "+5% from last month" 
+      description: stats?.businessGrowth ? `+${stats.businessGrowth}% from last month` : '',
     },
-    { 
-      title: "Categories", 
-      value: stats.categories.toLocaleString(), 
-      icon: <CategoryIcon />, 
+    {
+      title: 'Categories',
+      value: stats?.totalCategories?.toLocaleString() || '0',
+      icon: <CategoryIcon />,
       color: theme.palette.warning.main,
-      description: "Across all businesses" 
+      description: 'Across all businesses',
     },
-    { 
-      title: "Total Items", 
-      value: stats.items.toLocaleString(), 
-      icon: <InventoryIcon />, 
+    {
+      title: 'Total Items',
+      value: stats?.totalItems?.toLocaleString() || '0',
+      icon: <InventoryIcon />,
       color: theme.palette.secondary.main,
-      description: "+133% from last month" 
+      description: stats?.itemGrowth ? `+${stats.itemGrowth}% from last month` : '',
     },
   ];
 
@@ -138,164 +125,95 @@ const AdminDashboard = () => {
       <Helmet>
         <title>{title}</title>
       </Helmet>
-      <Box sx={{ padding: { xs: 2, md: 4 } }}>
-        <Box sx={{ mb: 4, display: 'flex', alignItems: 'center' }}>
-          <Typography variant="h4" fontWeight="bold" sx={{ flexGrow: 1 }}>
+      
+      <Box sx={{ p: { xs: 2, md: 4 } }}>
+        {/* Header Section */}
+        <Box
+          sx={{
+            mb: 4,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: { xs: 2, sm: 0 },
+          }}
+        >
+          <Typography
+            variant="h4"
+            component="h1"
+            fontWeight="bold"
+            color="text.primary"
+          >
             {title}
           </Typography>
-          <Typography variant="subtitle1" color="textSecondary">
+          <Typography variant="subtitle1" color="text.secondary">
             Last updated: {new Date().toLocaleDateString()}
           </Typography>
         </Box>
 
-        {/* Summary Cards */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          {summaryCards.map((card) => (
+        {/* Error Alert */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
+
+        {/* Summary Cards Grid */}
+        <Grid container spacing={3}>
+          {summaryCards.map((card, index) => (
             <Grid item xs={12} sm={6} md={3} key={card.title}>
-              <Card 
-                elevation={2} 
-                sx={{ 
-                  height: '100%',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: 6
-                  }
-                }}
-              >
-                <CardContent>
-                  <Box display="flex" alignItems="center" mb={1}>
-                    <Avatar 
-                      sx={{ 
-                        bgcolor: alpha(card.color, 0.1), 
-                        color: card.color,
-                        marginRight: 2
-                      }}
+              <Fade in timeout={300 + index * 100}>
+                <Card
+                  elevation={2}
+                  sx={{
+                    height: '100%',
+                    transition: 'all 0.3s ease-in-out',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: 6,
+                    },
+                  }}
+                >
+                  <CardContent sx={{ p: 3 }}>
+                    <Box display="flex" alignItems="center" mb={2}>
+                      <Avatar
+                        sx={{
+                          bgcolor: alpha(card.color, 0.1),
+                          color: card.color,
+                          mr: 2,
+                          width: 48,
+                          height: 48,
+                        }}
+                      >
+                        {card.icon}
+                      </Avatar>
+                      <Typography
+                        variant="subtitle1"
+                        color="text.secondary"
+                        fontWeight="medium"
+                      >
+                        {card.title}
+                      </Typography>
+                    </Box>
+                    
+                    <Typography
+                      variant="h4"
+                      component="div"
+                      fontWeight="bold"
+                      color="text.primary"
+                      gutterBottom
                     >
-                      {card.icon}
-                    </Avatar>
-                    <Typography variant="subtitle1" color="textSecondary">
-                      {card.title}
+                      {card.value}
                     </Typography>
-                  </Box>
-                  <Typography variant="h4" fontWeight="bold" gutterBottom>
-                    {card.value}
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    {card.description}
-                  </Typography>
-                </CardContent>
-              </Card>
+                    
+                    <Typography variant="body2" color="text.secondary">
+                      {card.description}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Fade>
             </Grid>
           ))}
-        </Grid>
-
-        <Grid container spacing={4}>
-          {/* Growth Chart */}
-          <Grid item xs={12} lg={8}>
-            <Card elevation={2}>
-              <CardContent>
-                <Box display="flex" alignItems="center" mb={3}>
-                  <TrendingUpIcon sx={{ color: theme.palette.primary.main, mr: 1 }} />
-                  <Typography variant="h6" fontWeight="medium">
-                    Growth Trends
-                  </Typography>
-                </Box>
-                <Divider sx={{ mb: 3 }} />
-                <ResponsiveContainer width="100%" height={350}>
-                  <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={theme.palette.primary.main} stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor={theme.palette.primary.main} stopOpacity={0.1}/>
-                      </linearGradient>
-                      <linearGradient id="colorItems" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={theme.palette.success.main} stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor={theme.palette.success.main} stopOpacity={0.1}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.text.secondary, 0.2)} />
-                    <XAxis dataKey="name" tick={{ fill: theme.palette.text.secondary }} />
-                    <YAxis tick={{ fill: theme.palette.text.secondary }} />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: theme.palette.background.paper,
-                        borderColor: theme.palette.divider,
-                        borderRadius: 8,
-                        boxShadow: theme.shadows[3]
-                      }} 
-                    />
-                    <Legend />
-                    <Area 
-                      type="monotone" 
-                      dataKey="users" 
-                      stroke={theme.palette.primary.main} 
-                      fillOpacity={1} 
-                      fill="url(#colorUsers)" 
-                      name="Users"
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="items" 
-                      stroke={theme.palette.success.main} 
-                      fillOpacity={1} 
-                      fill="url(#colorItems)"
-                      name="Items" 
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Top Businesses */}
-          <Grid item xs={12} lg={4}>
-            <Card elevation={2} sx={{ height: '100%' }}>
-              <CardContent>
-                <Box display="flex" alignItems="center" mb={3}>
-                  <StoreIcon sx={{ color: theme.palette.primary.main, mr: 1 }} />
-                  <Typography variant="h6" fontWeight="medium">
-                    Top Businesses
-                  </Typography>
-                </Box>
-                <Divider sx={{ mb: 2 }} />
-                <List>
-                  {topBusinesses.map((biz, index) => (
-                    <ListItem 
-                      key={index} 
-                      sx={{ 
-                        py: 1.5,
-                        borderRadius: 1,
-                        transition: 'background-color 0.2s',
-                        '&:hover': {
-                          backgroundColor: alpha(theme.palette.primary.main, 0.05)
-                        },
-                        mb: 1
-                      }}
-                    >
-                      <ListItemAvatar>
-                        <Avatar sx={{ bgcolor: alpha(biz.color, 0.1), color: biz.color }}>
-                          {biz.name.charAt(0)}
-                        </Avatar>
-                      </ListItemAvatar>
-                      <ListItemText 
-                        primary={biz.name} 
-                        secondary={`Ranked #${index + 1}`}
-                      />
-                      <Box>
-                        <Typography fontWeight="bold" color="primary">
-                          {biz.itemCount.toLocaleString()}
-                        </Typography>
-                        <Typography variant="caption" color="textSecondary">
-                          items
-                        </Typography>
-                      </Box>
-                    </ListItem>
-                  ))}
-                </List>
-              </CardContent>
-            </Card>
-          </Grid>
         </Grid>
       </Box>
     </MainLayout>

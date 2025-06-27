@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Grid,
@@ -14,8 +14,7 @@ import {
   ListItem,
   ListItemText,
   ListItemAvatar,
-  IconButton,
-  Tooltip
+  Button
 } from "@mui/material";
 import { useSelector } from "react-redux";
 import { NavLink } from "react-router-dom";
@@ -23,79 +22,51 @@ import MainLayout from "../../layouts/MainLayout";
 import api from "../../api/axiosConfig";
 
 // Icons
-import BusinessIcon from "@mui/icons-material/Business";
-import CategoryIcon from "@mui/icons-material/Category";
 import InventoryIcon from "@mui/icons-material/Inventory";
+import PointOfSaleIcon from "@mui/icons-material/PointOfSale";
+import WarningIcon from "@mui/icons-material/Warning";
+import AddIcon from "@mui/icons-material/Add";
+import AssessmentIcon from "@mui/icons-material/Assessment";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import StorefrontIcon from "@mui/icons-material/Storefront";
-import MenuBookIcon from "@mui/icons-material/MenuBook";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import LocalShippingIcon from "@mui/icons-material/LocalShipping";
+import CategoryIcon from "@mui/icons-material/Category";
+import BusinessIcon from "@mui/icons-material/Business";
 
-// Mock Data (replace with actual data fetching logic)
-const mockData = {
-  totalBusinesses: 12,
-  totalCategories: 8,
-  totalItems: 56,
-  top5Businesses: [
-    { name: "Business 1", itemsCount: 15 },
-    { name: "Business 2", itemsCount: 12 },
-    { name: "Business 3", itemsCount: 10 },
-    { name: "Business 4", itemsCount: 8 },
-    { name: "Business 5", itemsCount: 6 },
-  ],
-};
-
-// Navigation Card Component
-const NavigationCard = ({ title, icon, to }) => {
+// Quick Action Button Component
+const QuickActionButton = ({ title, icon, to, color }) => {
   const theme = useTheme();
   
   return (
     <NavLink to={to} style={{ textDecoration: "none" }}>
-      <Card 
-        sx={{ 
-          height: "100%",
+      <Button
+        variant="contained"
+        color={color || "primary"}
+        startIcon={icon}
+        fullWidth
+        sx={{
+          height: 80,
           display: "flex",
-          alignItems: "center",
+          justifyContent: "flex-start",
+          paddingLeft: 3,
+          fontSize: "1rem",
+          textTransform: "none",
+          borderRadius: "12px",
+          boxShadow: theme.shadows[2],
           transition: "all 0.3s",
           "&:hover": {
-            transform: "translateY(-5px)",
-            boxShadow: theme.shadows[6]
+            transform: "translateY(-3px)",
+            boxShadow: theme.shadows[4]
           }
         }}
       >
-        <CardContent sx={{ 
-          display: "flex", 
-          alignItems: "center", 
-          justifyContent: "space-between",
-          width: "100%",
-          padding: "20px !important"
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <Avatar
-              sx={{
-                bgcolor: theme.palette.primary.main,
-                width: 48,
-                height: 48,
-                marginRight: 2
-              }}
-            >
-              {icon}
-            </Avatar>
-            <Typography variant="h6" color="textPrimary">
-              {title}
-            </Typography>
-          </Box>
-          <ArrowForwardIcon color="action" />
-        </CardContent>
-      </Card>
+        {title}
+      </Button>
     </NavLink>
   );
 };
 
 // Stat Card Component
-const StatCard = ({ title, value, icon, color }) => {
+const StatCard = ({ title, value, icon, color, trend }) => {
   const theme = useTheme();
   
   return (
@@ -120,6 +91,14 @@ const StatCard = ({ title, value, icon, color }) => {
             <Typography variant="h4" component="div" fontWeight="bold">
               {value}
             </Typography>
+            {trend && (
+              <Box display="flex" alignItems="center" mt={1}>
+                <TrendingUpIcon fontSize="small" color="success" />
+                <Typography variant="caption" color="success.main" ml={0.5}>
+                  {trend}
+                </Typography>
+              </Box>
+            )}
           </Box>
           <Avatar
             sx={{
@@ -142,43 +121,146 @@ const Dashboard = () => {
   const user = currentUser?.user;
   
   const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState({
+    totalBusinesses: 0,
+    totalCategories: 0,
+    totalItems: 0,
+    salesToday: 0,
+    lowStockItems: 0,
+    recentSales: [],
+    lowStockProducts: []
+  });
+
+  const fetchDashboardData = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Get the current user's ID
+      const userId = user?._id;
+      
+      if (!userId) {
+        console.error("User ID not available");
+        setLoading(false);
+        return;
+      }
+
+      // Fetch all dashboard data for the specific user
+      const [businessesResponse, categoriesResponse, itemsResponse] = await Promise.all([
+        api.get(`api/v1/businesses?userId=${userId}`).catch(err => ({ data: { data: { total: 0 } } })),
+        api.get(`api/v1/categories?userId=${userId}`).catch(err => ({ data: { data: { total: 0 } } })),
+        api.get(`api/v1/items?userId=${userId}`).catch(err => ({ data: { data: { total: 0 } } }))
+      ]);
+      
+      // Extract totals from responses
+      const totalBusinesses = businessesResponse.data?.data?.total || 0;
+      const totalCategories = categoriesResponse.data?.data?.total || 0;
+      const totalItems = itemsResponse.data?.data?.total || 0;
+      
+      console.log("Dashboard data for user:", userId, {
+        totalBusinesses,
+        totalCategories,
+        totalItems
+      });
+      
+      setDashboardData(prev => ({
+        ...prev,
+        totalBusinesses,
+        totalCategories,
+        totalItems
+      }));
+    } catch (error) {
+      console.error("Failed to fetch dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
 
   useEffect(() => {
-    // Simulate an API call to fetch dashboard data
-    setTimeout(() => {
-      setLoading(false); // Stop loading after mock data is loaded
-    }, 1000);
-  }, []);
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
-  const renderBusinessList = () => (
+  const renderRecentSales = () => (
     <List sx={{ width: "100%" }}>
-      {mockData.top5Businesses.map((business, index) => (
-        <React.Fragment key={index}>
-          <ListItem
-            secondaryAction={
-              <Tooltip title="More options">
-                <IconButton edge="end">
-                  <MoreVertIcon />
-                </IconButton>
-              </Tooltip>
-            }
-          >
-            <ListItemAvatar>
-              <Avatar sx={{ bgcolor: theme.palette.primary.main }}>
-                <StorefrontIcon />
-              </Avatar>
-            </ListItemAvatar>
-            <ListItemText
-              primary={business.name}
-              secondary={`${business.itemsCount} items`}
-              primaryTypographyProps={{ fontWeight: "medium" }}
-            />
-          </ListItem>
-          {index < mockData.top5Businesses.length - 1 && (
-            <Divider variant="inset" component="li" />
-          )}
-        </React.Fragment>
-      ))}
+      {dashboardData.recentSales.length > 0 ? (
+        dashboardData.recentSales.map((sale, index) => (
+          <React.Fragment key={index}>
+            <ListItem
+              secondaryAction={
+                <Typography variant="body2" color="textSecondary">
+                  {sale.time}
+                </Typography>
+              }
+            >
+              <ListItemAvatar>
+                <Avatar sx={{ bgcolor: theme.palette.success.light }}>
+                  <PointOfSaleIcon color="success" />
+                </Avatar>
+              </ListItemAvatar>
+              <ListItemText
+                primary={`${sale.id} - ${sale.product}`}
+                secondary={sale.amount}
+                primaryTypographyProps={{ fontWeight: "medium" }}
+                secondaryTypographyProps={{ color: "success.main", fontWeight: "medium" }}
+              />
+            </ListItem>
+            {index < dashboardData.recentSales.length - 1 && (
+              <Divider variant="inset" component="li" />
+            )}
+          </React.Fragment>
+        ))
+      ) : (
+        <ListItem>
+          <ListItemText
+            primary="No recent sales"
+            secondary="Sales will appear here once you start recording them"
+            primaryTypographyProps={{ color: "textSecondary" }}
+            secondaryTypographyProps={{ color: "textSecondary" }}
+          />
+        </ListItem>
+      )}
+    </List>
+  );
+
+  const renderLowStockItems = () => (
+    <List sx={{ width: "100%" }}>
+      {dashboardData.lowStockProducts.length > 0 ? (
+        dashboardData.lowStockProducts.map((product, index) => (
+          <React.Fragment key={index}>
+            <ListItem>
+              <ListItemAvatar>
+                <Avatar sx={{ bgcolor: theme.palette.warning.light }}>
+                  <WarningIcon color="warning" />
+                </Avatar>
+              </ListItemAvatar>
+              <ListItemText
+                primary={product.name}
+                secondary={`${product.stock} left (threshold: ${product.threshold})`}
+                primaryTypographyProps={{ fontWeight: "medium" }}
+                secondaryTypographyProps={{ color: "warning.main" }}
+              />
+              <Button 
+                variant="outlined" 
+                size="small" 
+                color="warning"
+                startIcon={<LocalShippingIcon />}
+              >
+                Reorder
+              </Button>
+            </ListItem>
+            {index < dashboardData.lowStockProducts.length - 1 && (
+              <Divider variant="inset" component="li" />
+            )}
+          </React.Fragment>
+        ))
+      ) : (
+        <ListItem>
+          <ListItemText
+            primary="No low stock items"
+            secondary="All products are well stocked"
+            primaryTypographyProps={{ color: "textSecondary" }}
+            secondaryTypographyProps={{ color: "textSecondary" }}
+          />
+        </ListItem>
+      )}
     </List>
   );
 
@@ -213,57 +295,61 @@ const Dashboard = () => {
           }}
         >
           <Typography variant="h4" sx={{ fontWeight: "bold" }}>
-            Welcome, {user?.name || "User"}!
+            Welcome back, {user?.name || "User"}!
           </Typography>
           <Typography variant="subtitle1" sx={{ opacity: 0.8, mt: 1 }}>
-            Here's an overview of your business performance
+            Here's what's happening with your business today
           </Typography>
         </Paper>
 
+        {/* Key Metrics */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid item xs={12} sm={6} lg={4}>
             <StatCard 
               title="Total Businesses" 
-              value={mockData.totalBusinesses} 
+              value={dashboardData.totalBusinesses} 
               icon={<BusinessIcon fontSize="large" />}
               color={theme.palette.primary.main}
+              trend="+3 this month"
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid item xs={12} sm={6} lg={4}>
             <StatCard 
               title="Total Categories" 
-              value={mockData.totalCategories} 
+              value={dashboardData.totalCategories} 
               icon={<CategoryIcon fontSize="large" />}
-              color={theme.palette.secondary.main}
+              color={theme.palette.info.main}
+              trend="+2 this month"
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid item xs={12} sm={6} lg={4}>
             <StatCard 
               title="Total Items" 
-              value={mockData.totalItems} 
+              value={dashboardData.totalItems} 
               icon={<InventoryIcon fontSize="large" />}
-              color="#ff9800" // Orange
+              color={theme.palette.success.main}
+              trend="+12% this month"
             />
           </Grid>
         </Grid>
 
         <Grid container spacing={3}>
-          <Grid item xs={12} md={7}>
+          {/* <Grid item xs={12} md={8}>
             <Card sx={{ borderRadius: "12px", height: "100%" }}>
               <CardContent>
                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                   <Typography variant="h6" fontWeight="medium">
-                    Top Performing Businesses
+                    Recent Sales
                   </Typography>
-                  <Avatar sx={{ bgcolor: theme.palette.primary.light }}>
-                    <TrendingUpIcon />
+                  <Avatar sx={{ bgcolor: theme.palette.success.light }}>
+                    <TrendingUpIcon color="success" />
                   </Avatar>
                 </Box>
-                {renderBusinessList()}
+                {renderRecentSales()}
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} md={5}>
+          </Grid> */}
+          <Grid item xs={12} md={4}>
             <Card sx={{ borderRadius: "12px", mb: 3 }}>
               <CardContent>
                 <Typography variant="h6" fontWeight="medium" gutterBottom>
@@ -271,22 +357,46 @@ const Dashboard = () => {
                 </Typography>
                 <Grid container spacing={2} sx={{ mt: 1 }}>
                   <Grid item xs={12}>
-                    <NavigationCard 
-                      title="Business Management" 
-                      icon={<StorefrontIcon />} 
+                    <QuickActionButton 
+                      title="Add New Business" 
+                      icon={<AddIcon />} 
                       to="/client/business-management" 
+                      color="primary"
                     />
                   </Grid>
                   <Grid item xs={12}>
-                    <NavigationCard 
-                      title="Category Management" 
-                      icon={<MenuBookIcon />} 
-                      to="/client/category-management" 
+                    <QuickActionButton 
+                      title="Add New Category" 
+                      icon={<CategoryIcon />} 
+                      to="/client/category-management"
+                      color="success"
                     />
                   </Grid>
+                  {/* <Grid item xs={12}>
+                    <QuickActionButton 
+                      title="View Reports" 
+                      icon={<AssessmentIcon />} 
+                      to="/reports" 
+                      color="info"
+                    />
+                  </Grid> */}
                 </Grid>
               </CardContent>
             </Card>
+            
+            {/* <Card sx={{ borderRadius: "12px" }}>
+              <CardContent>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                  <Typography variant="h6" fontWeight="medium">
+                    Low Stock Items
+                  </Typography>
+                  <Avatar sx={{ bgcolor: theme.palette.warning.light }}>
+                    <WarningIcon color="warning" />
+                  </Avatar>
+                </Box>
+                {renderLowStockItems()}
+              </CardContent>
+            </Card> */}
           </Grid>
         </Grid>
       </Box>

@@ -69,20 +69,20 @@ const NAVIGATION = [
     roles: ["user"],
   },
 
-  { kind: "divider" },
-  { kind: "header", title: "Subscription", roles: ["admin"] },
-  {
-    segment: "admin/subscription-plan-management",
-    title: "Subscription Plan Management",
-    icon: <ShoppingCartIcon />,
-    roles: ["admin"],
-  },
-  {
-    segment: "admin/user-subscription-plan-management",
-    title: "User-Subscription Plan Management",
-    icon: <BarChartIcon />,
-    roles: ["admin"],
-  },
+  // { kind: "divider" },
+  // { kind: "header", title: "Subscription", roles: ["admin"] },
+  // {
+  //   segment: "admin/subscription-plan-management",
+  //   title: "Subscription Plan Management",
+  //   icon: <ShoppingCartIcon />,
+  //   roles: ["admin"],
+  // },
+  // {
+  //   segment: "admin/user-subscription-plan-management",
+  //   title: "User-Subscription Plan Management",
+  //   icon: <BarChartIcon />,
+  //   roles: ["admin"],
+  // },
   { kind: "header", title: "Contacts", roles: ["user"] },
   {
     segment: "client/telegram-management",
@@ -99,7 +99,12 @@ const NAVIGATION = [
     roles: ["admin"],
   },
   { kind: "header", title: "Orders", roles: ["user"] },
-
+ {
+    segment: "client/orders",
+    title: "Orders",
+    icon: <DescriptionIcon />,
+    roles: ["user"],
+  },
   { kind: "divider" },
   { kind: "header", title: "Reports & An  alysis" },
   {
@@ -107,6 +112,11 @@ const NAVIGATION = [
     title: "Reports",
     icon: <DescriptionIcon />,
     roles: ["admin"],
+  }, {
+    segment: "client/reports",
+    title: "Reports",
+    icon: <DescriptionIcon />,
+    roles: ["user"],
   },
   {
     segment: "admin/analysis",
@@ -124,7 +134,7 @@ const NAVIGATION = [
     roles: ["admin"],
   },
   {
-    segment: "client/setting",
+    segment: "client/settings",
     title: "Settings",
     icon: <Settings />,
     roles: ["user"],

@@ -128,7 +128,7 @@ const CartPage = () => {
       `🏠 *Address:* ${orderData.customer.address}\n\n` +
       `🛒 *Items:*\n${itemsList}\n\n` +
       `💰 *Total:* $${orderData.total.toFixed(2)}\n` +
-      `💳 *Payment Method:* ${orderData.customer.paymentMethod}\n` +
+      // `💳 *Payment Method:* ${orderData.customer.paymentMethod}\n` +
       `📝 *Notes:* ${orderData.customer.notes || "None"}\n\n` +
       `⏰ ${new Date().toLocaleString()}`;
 
@@ -755,7 +755,7 @@ const CartPage = () => {
               error={!orderDetails.address}
               helperText={!orderDetails.address ? "Required field" : ""}
             />
-
+{/* 
             <FormControl fullWidth>
               <InputLabel>Payment Method</InputLabel>
               <Select
@@ -768,7 +768,7 @@ const CartPage = () => {
                 <MenuItem value="card">Credit Card</MenuItem>
                 <MenuItem value="online">Online Payment</MenuItem>
               </Select>
-            </FormControl>
+            </FormControl> */}
 
             <TextField
               fullWidth

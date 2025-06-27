@@ -141,6 +141,7 @@ export default function BusinessManagement() {
     try {
       const response = await api.get("api/v1/telegrams");
       setTelegrams(response.data.data || []);
+      console.log(response.data.data);
     } catch (error) {
       console.error("Failed to fetch telegrams:", error);
       setError(
@@ -310,28 +311,36 @@ export default function BusinessManagement() {
       const reader = new FileReader();
       
       reader.onload = async function (e) {
-        img.onload = function () {
+        img.onload = async function () {
           if (img.width > 1000 || img.height > 1000) {
-            setErrors({
-              ...errors,
+            setErrors((prev) => ({
+              ...prev,
               logo: "Image dimensions must be 1000x1000 pixels or smaller.",
-            });
+            }));
             return;
+          }
+
+          try {
+            const imageUrl = await uploadImage(file);
+            setFormState((prev) => ({ ...prev, logo: imageUrl }));
+            setErrors((prev) => ({ ...prev, logo: null }));
+          } catch (error) {
+            console.error("Image upload failed:", error);
+            setErrors((prev) => ({
+              ...prev,
+              logo: "Failed to upload image. Please try again.",
+            }));
           }
         };
         img.src = e.target.result;
       };
       reader.readAsDataURL(file);
-
-      const imageUrl = await uploadImage(file);
-      setFormState({ ...formState, logo: imageUrl });
-      setErrors({ ...errors, logo: null });
     } catch (error) {
-      console.error("Image upload failed:", error);
-      setErrors({
-        ...errors,
-        logo: "Failed to upload image. Please try again.",
-      });
+      console.error("Image processing failed:", error);
+      setErrors((prev) => ({
+        ...prev,
+        logo: "Failed to process image. Please try again.",
+      }));
     }
   };
 
@@ -340,10 +349,10 @@ export default function BusinessManagement() {
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
-      setErrors({
-        ...errors,
+      setErrors((prev) => ({
+        ...prev,
         image: "File size must be under 2MB.",
-      });
+      }));
       return;
     }
 
@@ -352,28 +361,36 @@ export default function BusinessManagement() {
       const reader = new FileReader();
       
       reader.onload = async function (e) {
-        img.onload = function () {
+        img.onload = async function () {
           if (img.width > 1000 || img.height > 1000) {
-            setErrors({
-              ...errors,
+            setErrors((prev) => ({
+              ...prev,
               image: "Image dimensions must be 1000x1000 pixels or smaller.",
-            });
+            }));
             return;
+          }
+
+          try {
+            const imageUrl = await uploadImage(file);
+            setFormState((prev) => ({ ...prev, image: imageUrl }));
+            setErrors((prev) => ({ ...prev, image: null }));
+          } catch (error) {
+            console.error("Image upload failed:", error);
+            setErrors((prev) => ({
+              ...prev,
+              image: "Failed to upload image. Please try again.",
+            }));
           }
         };
         img.src = e.target.result;
       };
       reader.readAsDataURL(file);
-
-      const imageUrl = await uploadImage(file);
-      setFormState({ ...formState, image: imageUrl });
-      setErrors({ ...errors, image: null });
     } catch (error) {
-      console.error("Image upload failed:", error);
-      setErrors({
-        ...errors,
-        image: "Failed to upload image. Please try again.",
-      });
+      console.error("Image processing failed:", error);
+      setErrors((prev) => ({
+        ...prev,
+        image: "Failed to process image. Please try again.",
+      }));
     }
   };
 
@@ -532,11 +549,14 @@ export default function BusinessManagement() {
                 variant="outlined"
                 InputLabelProps={{ shrink: true }}
               >
-                {telegrams?.map?.((telegram) => (
-                  <MenuItem key={telegram._id} value={telegram._id}>
-                    {telegram.name}
+               <MenuItem value="" disabled>
+                    Select a Category
                   </MenuItem>
-                ))}
+                  {telegrams?.data?.map((cat) => (
+                    <MenuItem key={cat._id} value={cat._id}>
+                      {cat.name}
+                    </MenuItem>
+                  ))}
               </TextField>
             </Grid>
 
